@@ -1,15 +1,21 @@
 <script setup lang="ts">
-import { computed, onMounted, reactive } from 'vue'
+import { computed, onBeforeUnmount, onMounted, reactive, ref } from 'vue'
 import { Camera, Heart, Settings, X } from '@lucide/vue'
 import { useCoupleStore } from '../stores/couple'
 import { useToast } from '../composables/useToast'
-import { daysBetween, formatDate } from '../utils/date'
+import { elapsedBreakdown, formatDate } from '../utils/date'
 import { imageFileToDataUrl } from '../utils/image'
 
 const couple = useCoupleStore()
 const toast = useToast()
 const form = reactive({ display_name: '', nickname: '', avatar_url: '', birthday: '' })
-const days = computed(() => daysBetween(couple.couple?.started_date))
+
+// tick chỉ để ép breakdown tính lại mỗi giây - bản thân elapsedBreakdown()
+// luôn tự lấy giờ hiện tại, không cần truyền "now" vào đây.
+const tick = ref(0)
+let timer: ReturnType<typeof setInterval> | undefined
+const breakdown = computed(() => { void tick.value; return couple.couple ? elapsedBreakdown(couple.couple.started_date) : null })
+const pad = (value: number) => String(value).padStart(2, '0')
 
 onMounted(async () => {
   if (!couple.couple) await couple.load()
@@ -19,7 +25,10 @@ onMounted(async () => {
     avatar_url: couple.myProfile?.avatar_url || '',
     birthday: couple.myProfile?.birthday || ''
   })
+  timer = setInterval(() => { tick.value++ }, 1000)
 })
+
+onBeforeUnmount(() => { if (timer) clearInterval(timer) })
 
 async function selectAvatar(event: Event) {
   const input = event.target as HTMLInputElement
@@ -54,8 +63,20 @@ async function save() {
 <template>
   <section class="page-stack">
     <header class="page-header"><div><span>Hai trái tim</span><h1>Chuyện của chúng mình</h1></div><RouterLink to="/settings" class="icon-link" aria-label="Cài đặt"><Settings :size="20" /></RouterLink></header>
-    <section class="couple-profile"><div v-for="profile in couple.profiles" :key="profile.id"><img :src="profile.avatar_url || '/favicon.svg'" :alt="profile.display_name" /><strong>{{ profile.nickname || profile.display_name }}</strong></div><Heart :size="28" fill="currentColor" /></section>
-    <section class="soft-card"><span>Ngày mình bắt đầu</span><strong>{{ couple.couple ? formatDate(couple.couple.started_date) : 'Chưa cấu hình' }}</strong><p>Đã bên nhau {{ days }} ngày</p></section>
+    <section v-if="couple.couple && breakdown" class="soft-card love-timer">
+      <span>Ngày mình bắt đầu</span>
+      <div class="love-timer-hearts">
+        <div class="love-timer-unit"><div class="love-timer-heart"><Heart :size="44" fill="currentColor" /><strong>{{ breakdown.years }}</strong></div><span>Năm</span></div>
+        <div class="love-timer-unit"><div class="love-timer-heart"><Heart :size="44" fill="currentColor" /><strong>{{ breakdown.months }}</strong></div><span>Tháng</span></div>
+        <div class="love-timer-unit"><div class="love-timer-heart"><Heart :size="44" fill="currentColor" /><strong>{{ breakdown.weeks }}</strong></div><span>Tuần</span></div>
+        <div class="love-timer-unit"><div class="love-timer-heart"><Heart :size="44" fill="currentColor" /><strong>{{ breakdown.days }}</strong></div><span>Ngày</span></div>
+      </div>
+      <div class="love-timer-footer">
+        <span class="love-timer-date">{{ formatDate(couple.couple.started_date) }}</span>
+        <span class="love-timer-clock">{{ pad(breakdown.hours) }} : {{ pad(breakdown.minutes) }} : {{ pad(breakdown.seconds) }}</span>
+      </div>
+    </section>
+    <p v-else class="soft-card empty">Chưa cấu hình ngày bắt đầu</p>
     <form class="editor-card profile-form" @submit.prevent="save">
       <h2>Một chút về mình</h2>
       <div class="image-picker profile-image-picker">

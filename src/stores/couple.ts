@@ -1,7 +1,8 @@
-﻿import { defineStore } from 'pinia'
+import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 import type { Couple, Profile } from '../types'
 import { coupleService } from '../services/couple.service'
+import { useAuthStore } from './auth'
 
 export const useCoupleStore = defineStore('couple', () => {
   const myProfile = ref<Profile | null>(null)
@@ -12,16 +13,38 @@ export const useCoupleStore = defineStore('couple', () => {
   const partnerProfile = computed(() => profiles.value.find((profile) => profile.id !== myProfile.value?.id) ?? null)
 
   async function load() {
-    loading.value = true; error.value = ''
+    loading.value = true
+    error.value = ''
     try {
-      myProfile.value = await coupleService.getMyProfile()
-      if (myProfile.value?.couple_id) {
-        couple.value = await coupleService.getCouple(myProfile.value.couple_id)
-        profiles.value = await coupleService.getProfiles(myProfile.value.couple_id)
+      const auth = useAuthStore()
+      if (!auth.user?.id) throw new Error('Không có user đăng nhập')
+
+      let profile = await coupleService.getMyProfile(auth.user.id)
+      if (!profile) {
+        profile = await coupleService.createProfile({
+          id: auth.user.id,
+          display_name: auth.user.email?.split('@')[0] || 'Bạn'
+        })
       }
-    } catch {
-      error.value = 'Không tải được hồ sơ. Kiểm tra kết nối hoặc cấu hình Supabase.'
-    } finally { loading.value = false }
+      myProfile.value = profile
+
+      if (profile.couple_id) {
+        const [coupleRow, coupleProfiles] = await Promise.all([
+          coupleService.getCouple(profile.couple_id),
+          coupleService.getProfiles(profile.couple_id)
+        ])
+        couple.value = coupleRow
+        profiles.value = coupleProfiles
+      } else {
+        couple.value = null
+        profiles.value = [profile]
+        error.value = 'Tài khoản chưa được gán couple_id. Xem README mục 7-8 để gán trong Supabase.'
+      }
+    } catch (loadError) {
+      error.value = loadError instanceof Error ? loadError.message : 'Không tải được hồ sơ'
+    } finally {
+      loading.value = false
+    }
   }
 
   async function saveProfile(input: Partial<Profile> & { id: string }) {

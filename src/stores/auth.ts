@@ -11,17 +11,32 @@ export const useAuthStore = defineStore('auth', () => {
 
   async function init() {
     loading.value = true
-    const { data } = await authService.getSession()
-    user.value = data.session?.user ?? null
-    authService.onAuthStateChange((_event, session) => { user.value = session?.user ?? null })
-    loading.value = false
+    try {
+      const { data } = await authService.getSession()
+      user.value = data.session?.user ?? null
+      authService.onAuthStateChange((_event, session) => { user.value = session?.user ?? null })
+    } finally {
+      loading.value = false
+    }
   }
 
-  async function login(email: string, password: string) {
+  async function login(username: string, password: string) {
     error.value = ''
-    const { data, error: authError } = await authService.signIn(email, password)
-    if (authError) { error.value = 'Email hoặc mật khẩu chưa đúng'; throw authError }
+    const { data, error: authError } = await authService.signIn(username, password)
+    if (authError) {
+      error.value = authError.message.includes('Invalid login credentials')
+        ? 'Sai username hoặc mật khẩu'
+        : authError.message || 'Đăng nhập thất bại'
+      throw authError
+    }
     user.value = data.user
+  }
+
+  async function signup(_username: string, _password: string) {
+    error.value = ''
+    console.log('📝 Signup not available - use fixed accounts')
+    error.value = 'Chỉ có 2 tài khoản: dragon / mint'
+    throw new Error('Signup not available')
   }
 
   async function logout() {
@@ -29,5 +44,5 @@ export const useAuthStore = defineStore('auth', () => {
     user.value = null
   }
 
-  return { user, loading, error, isAuthenticated, init, login, logout }
+  return { user, loading, error, isAuthenticated, init, login, signup, logout }
 })

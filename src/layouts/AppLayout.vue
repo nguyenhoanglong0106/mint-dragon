@@ -1,30 +1,53 @@
 <script setup lang="ts">
-import { HeartPulse, Home, Map, Settings, UserRound } from '@lucide/vue'
-import { onMounted } from 'vue'
+import { BookOpen, Camera, HeartPulse, Home, Map, PanelLeftClose, PanelLeftOpen, Settings, UserRound } from '@lucide/vue'
+import { onMounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { useCoupleStore } from '../stores/couple'
 import { useOnlineStatus } from '../composables/useOnlineStatus'
+import { googlePhotosAlbumUrl } from '../services/supabase'
 
 const route = useRoute()
 const couple = useCoupleStore()
 const { isOnline } = useOnlineStatus()
 onMounted(() => { void couple.load() })
+
+const openAlbum = () => window.open(googlePhotosAlbumUrl, '_blank', 'noopener,noreferrer')
+
+const sidebarOpen = ref(localStorage.getItem('sidebar-open') !== 'false')
+watch(sidebarOpen, (value) => localStorage.setItem('sidebar-open', String(value)))
+
 const nav = [
-  { to: '/', label: 'Nhà mình', icon: Home },
-  { to: '/memories', label: 'Thương nhớ', icon: HeartPulse },
-  { to: '/map', label: 'Gần nhau', icon: Map },
-  { to: '/profile', label: 'Chúng mình', icon: UserRound }
+  { to: '/', label: 'Chúng mình', icon: Home },
+  { to: '/diary', label: 'Lời nhắn', icon: BookOpen },
+  { to: '/memories', label: 'Kỉ niệm', icon: HeartPulse },
+  { to: '/profile', label: 'Cá nhân', icon: UserRound }
 ]
 </script>
 
 <template>
   <div class="app-shell">
-    <aside class="desktop-sidebar">
-      <RouterLink to="/" class="brand">Homie Love</RouterLink>
-      <RouterLink v-for="item in nav" :key="item.to" :to="item.to" class="side-link">
-        <component :is="item.icon" :size="18" /> {{ item.label }}
+    <aside class="desktop-sidebar" :class="{ collapsed: !sidebarOpen }">
+      <div class="sidebar-head">
+        <RouterLink v-show="sidebarOpen" to="/" class="brand">Homie Love</RouterLink>
+        <button
+          class="icon-link"
+          type="button"
+          :aria-label="sidebarOpen ? 'Thu gọn menu' : 'Mở rộng menu'"
+          @click="sidebarOpen = !sidebarOpen"
+        >
+          <component :is="sidebarOpen ? PanelLeftClose : PanelLeftOpen" :size="18" />
+        </button>
+      </div>
+
+      <RouterLink v-for="item in nav" :key="item.to" :to="item.to" class="side-link" :title="item.label">
+        <component :is="item.icon" :size="18" /><span v-show="sidebarOpen">{{ item.label }}</span>
       </RouterLink>
-      <RouterLink to="/settings" class="side-link"><Settings :size="18" /> Góc riêng</RouterLink>
+      <RouterLink to="/settings" class="side-link" title="Cài đặt"><Settings :size="18" /><span v-show="sidebarOpen">Cài đặt</span></RouterLink>
+
+      <p class="side-divider"><span v-show="sidebarOpen">Thao tác nhanh</span></p>
+      <RouterLink to="/memories?add=1" class="side-link" title="Ghi kỷ niệm mới"><HeartPulse :size="18" /><span v-show="sidebarOpen">Ghi kỷ niệm mới</span></RouterLink>
+      <RouterLink to="/map" class="side-link" title="Khoảng cách của mình"><Map :size="18" /><span v-show="sidebarOpen">Khoảng cách của mình</span></RouterLink>
+      <button type="button" class="side-link" title="Album hai đứa" @click="openAlbum"><Camera :size="18" /><span v-show="sidebarOpen">Album hai đứa</span></button>
     </aside>
 
     <main class="app-main">

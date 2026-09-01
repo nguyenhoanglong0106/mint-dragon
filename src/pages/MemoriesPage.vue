@@ -6,7 +6,7 @@ import { useCoupleStore } from '../stores/couple'
 import { useMemoriesStore } from '../stores/memories'
 import { useRoute } from 'vue-router'
 import { useToast } from '../composables/useToast'
-import { daysBetween, formatDate, todayIso } from '../utils/date'
+import { formatDate, todayIso } from '../utils/date'
 import { imageFileToDataUrl } from '../utils/image'
 
 const route = useRoute()
@@ -29,7 +29,6 @@ const form = reactive({
   is_favorite: false
 })
 
-const coupleNames = computed(() => couple.profiles.map((profile) => profile.nickname || profile.display_name).filter(Boolean).join('  ❤  ') || couple.couple?.name || 'Chúng mình')
 const years = computed(() => [...new Set(memories.items.map((item) => item.memory_date.slice(0, 4)))])
 const filteredMemories = computed(() => {
   if (activeFilter.value === 'favorite') return memories.items.filter((item) => item.is_favorite)
@@ -77,7 +76,10 @@ async function reload() {
 }
 
 async function saveMemory() {
-  if (!couple.couple?.id || !auth.user) return
+  if (!couple.couple?.id || !auth.user) {
+    toast.push('Chưa có couple_id nên chưa thể lưu kỷ niệm.', 'error')
+    return
+  }
   await memories.create({
     couple_id: couple.couple.id,
     created_by: auth.user.id,
@@ -118,18 +120,6 @@ watch(() => route.query.add, (value) => {
       <button class="memory-icon-btn" type="button" aria-label="Lọc yêu thích" @click="activeFilter = activeFilter === 'favorite' ? 'all' : 'favorite'"><SlidersHorizontal :size="20" /></button>
     </header>
 
-    <section class="memory-couple-card">
-      <div class="memory-avatar-pair">
-        <img v-for="profile in couple.profiles" :key="profile.id" :src="profile.avatar_url || '/favicon.svg'" :alt="profile.display_name" />
-        <span>❤</span>
-      </div>
-      <div>
-        <strong>{{ coupleNames }}</strong>
-        <p>Mình đã nắm tay nhau</p>
-        <b>{{ daysBetween(couple.couple?.started_date) }}</b><em> ngày</em>
-      </div>
-    </section>
-
     <section class="memory-tabs" aria-label="Bộ lọc kỷ niệm">
       <button :class="{ selected: activeFilter === 'all' }" type="button" @click="activeFilter = 'all'"><Grid2X2 :size="18" /> Tất cả yêu thương</button>
       <button :class="{ selected: activeFilter === 'year' }" type="button" @click="activeFilter = 'year'"><Calendar :size="18" /> Theo năm</button>
@@ -165,7 +155,7 @@ watch(() => route.query.add, (value) => {
         <label>Ngày của chúng mình<input v-model="form.memory_date" type="date" required /></label>
         <label>Lời nhắn gửi ngày ấy<textarea v-model="form.content" rows="3" required placeholder="Viết vài dòng để sau này đọc lại vẫn mỉm cười" /></label>
         <label>Nơi mình đã ở bên nhau<input v-model="form.location_name" placeholder="Hà Nội" /></label>
-                <div class="image-picker memory-cover-picker">
+        <div class="image-picker memory-cover-picker">
           <img v-if="form.cover_image_url" :src="form.cover_image_url" alt="Ảnh bìa kỷ niệm" />
           <div v-else class="image-placeholder"><Camera :size="24" /><span>Ảnh bìa</span></div>
           <div>

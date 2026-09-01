@@ -61,41 +61,31 @@ npm install
 
 Có thể chạy lại file này an toàn (idempotent) nếu cần - các lệnh đều dùng `if not exists` / `drop policy if exists`.
 
-## 7. Tạo 2 tài khoản (account)
+## 7. Tạo 2 tài khoản đăng nhập bằng username ngắn (dragon / mint)
+
+App đăng nhập bằng **username ngắn + mật khẩu** (`dragon` / `hoanglong0106` và `mint` / `hongdiem1708`) thay vì email dài, nhưng bên dưới vẫn là Supabase Auth thật - mỗi username được ánh xạ tới 1 email cố định dạng `<username>@mint-dragon.local`, mật khẩu được Supabase hash và lưu trong `auth.users` như bình thường.
 
 1. Vào **Authentication > Users > Add user** trong Supabase Dashboard.
-2. Tạo tài khoản thứ nhất (ví dụ: `you@example.com`) và đặt mật khẩu.
-3. Tạo tài khoản thứ hai (ví dụ: `partner@example.com`) và đặt mật khẩu.
-4. Bấm vào từng user để copy **User UID** (dạng uuid) - sẽ dùng ở bước tiếp theo.
+2. Tạo tài khoản thứ nhất với email `dragon@mint-dragon.local`, mật khẩu `hoanglong0106`.
+3. Tạo tài khoản thứ hai với email `mint@mint-dragon.local`, mật khẩu `hongdiem1708`.
+4. Tick "Auto Confirm User" khi tạo (app dùng email giả nên không thể xác thực qua link email).
 
 Không cần trang đăng ký công khai - chỉ admin (bạn) tạo 2 tài khoản này một lần duy nhất qua Dashboard.
 
-## 8. Tạo couple và ghép 2 user vào cùng couple
+## 8. Chạy migration gán username + tạo couple
 
-Mở **SQL Editor**, chạy đoạn sau (thay 2 UUID lấy ở bước 7 và ngày bắt đầu yêu):
+1. Mở **SQL Editor**, copy toàn bộ nội dung file [`supabase/migrations/0002_username_login.sql`](supabase/migrations/0002_username_login.sql) và chạy.
+2. File này tự động:
+   - Thêm cột `username` (unique) vào bảng `profiles`.
+   - Tạo 1 couple mặc định.
+   - Tìm id của 2 user vừa tạo ở bước 7 theo email, gán `username` (`dragon` / `mint`) và `couple_id` cho profile của họ - không cần copy UUID thủ công.
+3. Sửa `started_date` trong file thành ngày bắt đầu yêu thật của hai bạn trước khi chạy (mặc định `2024-01-01`).
 
-```sql
-insert into public.couples (name, started_date)
-values ('Chúng mình', '2023-06-01')
-returning id;
--- Nhớ lại id vừa trả về (ví dụ 11111111-1111-1111-1111-111111111111)
+Có thể chạy lại file này an toàn (idempotent). Sau bước này, đăng nhập ở bước 10 bằng `dragon`/`hoanglong0106` hoặc `mint`/`hongdiem1708` sẽ hoạt động, và toàn bộ dữ liệu (kỷ niệm, lời thương mỗi ngày...) được lưu thật trong Supabase, đồng bộ giữa 2 người thay vì chỉ lưu trên trình duyệt.
 
-update public.profiles set couple_id = '<id-cua-couple-vua-tao>'
-where id = '<uuid-user-thu-nhat>';
+Bạn cũng có thể tham khảo file [`supabase/seed.sql`](supabase/seed.sql) để có thêm vài kỷ niệm mẫu (nhớ sửa 2 UUID trong file theo id thật của 2 user trước khi chạy).
 
-update public.profiles set couple_id = '<id-cua-couple-vua-tao>'
-where id = '<uuid-user-thu-hai>';
-```
-
-> Lưu ý: hàng `profiles` cho mỗi user sẽ **tự động không tồn tại** cho tới khi họ đăng nhập lần đầu (do RLS cho phép user tự insert profile của chính mình). Nếu muốn tạo sẵn profile trước, chạy thêm:
->
-> ```sql
-> insert into public.profiles (id, couple_id, display_name)
-> values ('<uuid-user-thu-nhat>', '<id-couple>', 'Tên hiển thị 1')
-> on conflict (id) do update set couple_id = excluded.couple_id;
-> ```
-
-Bạn cũng có thể tham khảo file [`supabase/seed.sql`](supabase/seed.sql) để tạo couple + profile + vài kỷ niệm mẫu trong một lần chạy (nhớ sửa 2 UUID trong file trước).
+Chạy thêm file [`supabase/migrations/0003_lock_couple_id.sql`](supabase/migrations/0003_lock_couple_id.sql) - vá một lỗ hổng RLS: nếu không có file này, 1 trong 2 tài khoản đã đăng nhập có thể tự đổi `couple_id` của chính mình (ví dụ qua console trình duyệt) để xem/ghi dữ liệu của couple khác nếu project Supabase từng chứa nhiều hơn 1 couple. File này thêm 1 trigger chặn việc đó từ phía client, không ảnh hưởng thao tác gán couple thủ công của admin qua SQL Editor.
 
 ## 9. Cấu hình file `.env`
 
@@ -119,7 +109,7 @@ File `.env` đã được đưa vào `.gitignore` - **không bao giờ commit** 
 npm run dev
 ```
 
-Mở trình duyệt tại `http://localhost:5173` (hoặc port Vite in ra). Đăng nhập bằng 1 trong 2 tài khoản đã tạo ở bước 7.
+Mở trình duyệt tại `http://localhost:5173` (hoặc port Vite in ra). Đăng nhập bằng `dragon`/`hoanglong0106` hoặc `mint`/`hongdiem1708` (đã tạo ở bước 7-8).
 
 ## 11. Build production
 
@@ -168,8 +158,8 @@ Kiểm tra lại (tùy chọn): vào **Database > Replication** trong Supabase D
 
 | Vấn đề | Cách xử lý |
 | --- | --- |
-| Đăng nhập báo "Email hoặc mật khẩu chưa đúng" | Kiểm tra lại email/mật khẩu đã tạo trong Authentication > Users. |
-| Trang trắng, không có dữ liệu | Kiểm tra đã chạy migration (bước 6) và đã gán `couple_id` cho cả 2 profile (bước 8) chưa. |
+| Đăng nhập báo "Sai username hoặc mật khẩu" | Kiểm tra đã tạo đúng email `dragon@mint-dragon.local` / `mint@mint-dragon.local` với đúng mật khẩu trong Authentication > Users (bước 7). |
+| Trang trắng, không có dữ liệu | Kiểm tra đã chạy migration (bước 6, 8) và profile của cả 2 user đã có `couple_id` chưa (chạy lại `0002_username_login.sql`). |
 | Vào app thấy cảnh báo "Hãy điền Supabase URL..." | Chưa cấu hình đúng `.env`, kiểm tra lại bước 9 và restart `npm run dev`. |
 | Không thấy vị trí người còn lại | Kiểm tra cả 2 tài khoản đã bật "Chia sẻ vị trí", kiểm tra Realtime đã bật (bước 13), kiểm tra cả 2 profile cùng `couple_id`. |
 | Trình duyệt từ chối GPS | Vào cài đặt trình duyệt/site, cấp lại quyền Location cho domain, tải lại trang. |
@@ -193,14 +183,16 @@ src/
   components/    common/ home/ memory/ diary/ map/
   composables/   useGeolocation, useRealtimeLocation, useDistance, useTheme, useOnlineStatus, useToast
   layouts/       AppLayout.vue (bottom nav mobile + sidebar desktop)
-  pages/         LoginPage, HomePage, MemoriesPage, MemoryDetailPage, DiaryPage, MapPage, SpecialDatesPage, ProfilePage, SettingsPage
+  pages/         LoginPage, HomePage, MemoriesPage, MemoryDetailPage, DiaryPage, MapPage, ProfilePage, SettingsPage
   router/        route guard (redirect /login nếu chưa đăng nhập)
   services/      supabase.ts + *.service.ts (gọi Supabase trực tiếp, không qua backend riêng)
   stores/        Pinia store cho auth, couple, memories, diaries, specialDates, location
   types/         kiểu dữ liệu dùng chung, khớp với schema Postgres
-  utils/         distance.ts (Haversine), date.ts (dayjs helpers)
+  utils/         distance.ts (Haversine), date.ts (dayjs helpers), mood.ts (mood options dùng chung cho diary + history)
 supabase/
   migrations/0001_init.sql   schema + RLS + trigger + realtime
+  migrations/0002_username_login.sql   username login (dragon/mint) + tạo couple
+  migrations/0003_lock_couple_id.sql   vá RLS: chặn user tự đổi couple_id của mình
   seed.sql                   dữ liệu mẫu (tùy chọn)
 tests/           unit test cho utils (Vitest)
 ```
@@ -208,7 +200,7 @@ tests/           unit test cho utils (Vitest)
 ## Giới hạn / phần còn lại bạn cần tự làm
 
 - Tạo Supabase project thật và điền `.env` (bước 5, 9).
-- Tạo 2 tài khoản và ghép couple bằng SQL (bước 7, 8) - đây là bước thủ công bắt buộc vì app không có đăng ký công khai.
+- Tạo 2 tài khoản (email giả `dragon@mint-dragon.local` / `mint@mint-dragon.local`) và chạy migration gán couple (bước 7, 8) - đây là bước thủ công bắt buộc vì app không có đăng ký công khai và Supabase Auth cần được tạo qua Dashboard (cần service role key, không dùng được từ frontend).
 - Tạo/thay avatar thật (nhập URL ảnh trong trang Hồ sơ) và cập nhật album Google Photos thật.
 - Deploy lên Cloudflare Pages và gán biến môi trường (bước 12).
 - (Tùy chọn, không thuộc scope v1) Nếu muốn vị trí chạy cả khi tắt màn hình/đóng app, cần đóng gói bằng Capacitor + plugin Background Geolocation native - kiến trúc hiện tại đã sẵn sàng để mở rộng nhưng chưa triển khai trong bản này.

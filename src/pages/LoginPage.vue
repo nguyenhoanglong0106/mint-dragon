@@ -3,22 +3,23 @@ import { computed, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { Heart } from '@lucide/vue'
 import { useAuthStore } from '../stores/auth'
-import { hasSupabaseConfig } from '../services/supabase'
 
-const email = ref('')
+const username = ref('')
 const password = ref('')
 const loading = ref(false)
 const auth = useAuthStore()
 const route = useRoute()
 const router = useRouter()
-const canSubmit = computed(() => email.value.includes('@') && password.value.length >= 6)
+const canSubmit = computed(() => username.value.length > 0 && password.value.length >= 6)
 
 async function submit() {
   if (!canSubmit.value) return
   loading.value = true
   try {
-    await auth.login(email.value, password.value)
+    await auth.login(username.value, password.value)
     await router.replace(String(route.query.redirect || '/'))
+  } catch {
+    // auth.error is already set by the store; nothing else to do here
   } finally { loading.value = false }
 }
 </script>
@@ -28,9 +29,8 @@ async function submit() {
       <div class="login-mark"><Heart :size="30" /></div>
       <h1>Góc nhỏ của chúng mình</h1>
       <p>Một nơi dịu dàng để cất kỷ niệm, lời nhắn và những lần mình tìm thấy nhau.</p>
-      <div v-if="!hasSupabaseConfig" class="config-warning">Hãy điền Supabase URL và anon key trong file .env trước khi đăng nhập.</div>
       <form @submit.prevent="submit">
-        <label>Email<input v-model.trim="email" type="email" autocomplete="email" required /></label>
+        <label>Username<input v-model.trim="username" type="text" autocomplete="username" placeholder="dragon hoặc mint" required /></label>
         <label>Mật khẩu<input v-model="password" type="password" autocomplete="current-password" minlength="6" required /></label>
         <label class="check"><input type="checkbox" checked /> Ghi nhớ phiên đăng nhập</label>
         <button class="primary-btn" type="submit" :disabled="!canSubmit || loading">{{ loading ? 'Đang đăng nhập...' : 'Đăng nhập' }}</button>

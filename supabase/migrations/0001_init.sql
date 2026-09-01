@@ -49,7 +49,7 @@ create table if not exists public.diaries (
   diary_date date not null,
   title text not null,
   content text not null default '',
-  mood text check (mood in ('happy', 'love', 'normal', 'sad', 'excited')),
+  mood text check (mood in ('happy', 'love', 'normal', 'sad', 'excited', 'calm')),
   weather text,
   google_photos_url text,
   created_at timestamptz not null default now(),

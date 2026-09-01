@@ -6,7 +6,6 @@ import MemoriesPage from '../pages/MemoriesPage.vue'
 import MemoryDetailPage from '../pages/MemoryDetailPage.vue'
 import DiaryPage from '../pages/DiaryPage.vue'
 import MapPage from '../pages/MapPage.vue'
-import SpecialDatesPage from '../pages/SpecialDatesPage.vue'
 import ProfilePage from '../pages/ProfilePage.vue'
 import SettingsPage from '../pages/SettingsPage.vue'
 import { useAuthStore } from '../stores/auth'
@@ -22,7 +21,6 @@ const router = createRouter({
         { path: 'memories/:id', name: 'memory-detail', component: MemoryDetailPage },
         { path: 'diary', name: 'diary', component: DiaryPage },
         { path: 'map', name: 'map', component: MapPage },
-        { path: 'special-dates', name: 'special-dates', component: SpecialDatesPage },
         { path: 'profile', name: 'profile', component: ProfilePage },
         { path: 'settings', name: 'settings', component: SettingsPage }
       ]
