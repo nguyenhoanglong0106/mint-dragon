@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { BookOpen, Camera, ExternalLink, Gift, HeartPulse, Home, LogOut, Map, Moon, SunMedium, UserRound } from '@lucide/vue'
+import { BookOpen, Camera, ExternalLink, HeartPulse, Home, LogOut, Map, Moon, SunMedium, UserRound } from '@lucide/vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
 import { useTheme } from '../composables/useTheme'
@@ -9,12 +9,11 @@ async function logout() { await auth.logout(); await router.replace('/login') }
 const openAlbum = () => window.open(googlePhotosAlbumUrl, '_blank', 'noopener,noreferrer')
 
 const guideItems = [
-  { icon: Home, title: 'Tổ ấm hôm nay', text: 'Xem tổng quan: số ngày bên nhau, kỷ niệm/nhật ký gần nhất, ngày đặc biệt sắp tới và các lối tắt nhanh.' },
+  { icon: Home, title: 'Tổ ấm hôm nay', text: 'Xem tổng quan: số ngày bên nhau, trạng thái/tâm trạng của hai đứa, khoảng cách hiện tại và kỷ niệm gần nhất.' },
   { icon: HeartPulse, title: 'Góc thương nhớ', text: 'Xem lịch sử kỷ niệm theo năm, lọc yêu thích và thêm dấu mốc mới cho hai người.' },
   { icon: BookOpen, title: 'Lời thương mỗi ngày', text: 'Viết vài dòng mỗi ngày kèm tâm trạng, thời tiết, xem lại theo danh sách.' },
-  { icon: Gift, title: 'Ngày thương không quên', text: 'Lưu các mốc quan trọng như ngày quen nhau, sinh nhật, Valentine - chạm vào thẻ đếm ngược ở trang chủ để mở.' },
-  { icon: Map, title: 'Khoảng cách yêu thương', text: 'Xem vị trí realtime của cả hai và khoảng cách hiện tại - cần bật "Chia sẻ vị trí" trong trang này.' },
-  { icon: UserRound, title: 'Chuyện của chúng mình', text: 'Cập nhật tên hiển thị, nickname, ảnh đại diện và ngày sinh của bạn, mở Cài đặt từ đây.' },
+  { icon: Map, title: 'Khoảng cách yêu thương', text: 'Xem vị trí realtime của cả hai và khoảng cách hiện tại - bật "Chia sẻ vị trí" ở trang này để bắt đầu.' },
+  { icon: UserRound, title: 'Chuyện của chúng mình', text: 'Xem thời gian yêu nhau theo năm/tháng/tuần/ngày, cập nhật tên hiển thị, nickname, ảnh đại diện và sinh nhật của bạn.' },
   { icon: Camera, title: 'Album hai đứa', text: 'Ảnh và video kỷ niệm được lưu trong album Google Photos dùng chung, mở nhanh ở mục bên dưới.' }
 ]
 </script>
