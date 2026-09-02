@@ -20,6 +20,7 @@ const nav = [
   { to: '/', label: 'Chúng mình', icon: Home },
   { to: '/diary', label: 'Lời nhắn', icon: BookOpen },
   { to: '/memories', label: 'Kỉ niệm', icon: HeartPulse },
+  { to: '/map', label: 'Vị trí', icon: Map },
   { to: '/profile', label: 'Cá nhân', icon: UserRound }
 ]
 </script>
@@ -46,7 +47,6 @@ const nav = [
 
       <p class="side-divider"><span v-show="sidebarOpen">Thao tác nhanh</span></p>
       <RouterLink to="/memories?add=1" class="side-link" title="Ghi kỷ niệm mới"><HeartPulse :size="18" /><span v-show="sidebarOpen">Ghi kỷ niệm mới</span></RouterLink>
-      <RouterLink to="/map" class="side-link" title="Khoảng cách của mình"><Map :size="18" /><span v-show="sidebarOpen">Khoảng cách của mình</span></RouterLink>
       <button type="button" class="side-link" title="Album hai đứa" @click="openAlbum"><Camera :size="18" /><span v-show="sidebarOpen">Album hai đứa</span></button>
     </aside>
 

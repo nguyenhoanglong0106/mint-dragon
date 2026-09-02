@@ -9,7 +9,7 @@ import { useCoupleStore } from '../stores/couple'
 import { useMemoriesStore } from '../stores/memories'
 import { useDiariesStore } from '../stores/diaries'
 import { useLocationStore } from '../stores/location'
-import { daysBetween, formatDate, greeting } from '../utils/date'
+import { daysBetween, formatDate, greeting, todayIso } from '../utils/date'
 import { moodMeta } from '../utils/mood'
 
 const ONLINE_WINDOW_MS = 5 * 60 * 1000
@@ -38,8 +38,12 @@ function isOnline(profileId: string) {
   return location ? Date.now() - new Date(location.updated_at).getTime() < ONLINE_WINDOW_MS : false
 }
 
+// Status tính theo ngày (diary_date) - hôm nào chưa đăng lời nhắn thì coi
+// như chưa có, tự về mặc định "đang nhớ người kia" thay vì hiện mãi status
+// của một ngày cũ trước đó.
 function latestDiaryOf(profileId: string) {
-  return diaries.items.find((item) => item.created_by === profileId) ?? null
+  const today = todayIso()
+  return diaries.items.find((item) => item.created_by === profileId && item.diary_date === today) ?? null
 }
 
 const statusPeople = computed(() => {
@@ -50,8 +54,8 @@ const statusPeople = computed(() => {
   const diaryA = latestDiaryOf(a.id)
   const diaryB = latestDiaryOf(b.id)
   return {
-    personA: { name: nameA, avatarUrl: a.avatar_url, moodLabel: moodMeta(diaryA?.mood).label, statusText: diaryA?.content || `Đang nhớ ${nameB}`, online: isOnline(a.id) },
-    personB: { name: nameB, avatarUrl: b.avatar_url, moodLabel: moodMeta(diaryB?.mood).label, statusText: diaryB?.content || `Đang nhớ ${nameA}`, online: isOnline(b.id) }
+    personA: { name: nameA, avatarUrl: a.avatar_url, moodLabel: diaryA ? moodMeta(diaryA.mood).label : 'nhớ', statusText: diaryA?.content || nameB, online: isOnline(a.id), musicVideoId: diaryA?.music_video_id, musicTitle: diaryA?.music_title },
+    personB: { name: nameB, avatarUrl: b.avatar_url, moodLabel: diaryB ? moodMeta(diaryB.mood).label : 'nhớ', statusText: diaryB?.content || nameA, online: isOnline(b.id), musicVideoId: diaryB?.music_video_id, musicTitle: diaryB?.music_title }
   }
 })
 
@@ -68,7 +72,7 @@ onMounted(async () => {
 })
 </script>
 <template>
-  <section class="page-stack">
+  <section class="page-stack home-page">
     <header class="home-hero">
       <div class="avatar-pair"><img v-for="profile in orderedProfiles" :key="profile.id" :src="profile.avatar_url || '/favicon.svg'" :alt="profile.display_name" /></div>
       <p class="home-tagline">{{ greeting() }}</p>

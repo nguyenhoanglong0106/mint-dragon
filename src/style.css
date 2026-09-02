@@ -54,7 +54,7 @@
 /* ============ Base ============ */
 * { box-sizing: border-box; }
 
-html, body, #app { height: 100%; }
+html, body, #app { height: 100%; overflow: hidden; }
 
 body {
   margin: 0;
@@ -70,113 +70,6 @@ body {
 }
 
 h1, h2, h3 { font-family: var(--font-heading); color: var(--text); margin: 0; font-weight: 700; }
-
-@media (max-width: 430px) {
-  html, body, #app {
-    min-height: 100%;
-  }
-
-  .app-main {
-    padding-left: 12px;
-    padding-right: 12px;
-    padding-top: 14px;
-  }
-
-  .page-stack {
-    gap: 12px;
-  }
-
-  .soft-card {
-    padding: 14px 14px;
-    border-radius: 18px;
-  }
-
-  .soft-card strong {
-    font-size: 1rem;
-  }
-
-  .primary-btn,
-  .ghost-btn,
-  .danger-btn {
-    width: 100%;
-    min-height: 46px;
-    padding-left: 16px;
-    padding-right: 16px;
-  }
-
-  .login-page {
-    padding: 18px 12px;
-  }
-
-  .login-card {
-    max-width: 100%;
-    padding: 24px 18px 20px;
-    border-radius: 20px;
-  }
-
-  .login-card h1 {
-    font-size: 1.2rem;
-  }
-
-  .login-card form {
-    gap: 12px;
-  }
-
-  .bottom-nav {
-    padding-left: 8px;
-    padding-right: 8px;
-  }
-
-  .bottom-link {
-    min-width: 48px;
-    padding: 6px 6px 5px;
-  }
-
-  .bottom-link span {
-    font-size: 0.62rem;
-  }
-
-  .bottom-link.add {
-    min-width: 52px;
-    min-height: 52px;
-    transform: translateY(-12px);
-  }
-
-  .home-hero h1 {
-    font-size: 1.2rem;
-  }
-
-  .page-header {
-    align-items: flex-start;
-    gap: 10px;
-  }
-
-  .page-header h1,
-  .memories-header h1 {
-    font-size: 1.3rem;
-  }
-
-}
-
-@media (max-width: 360px) {
-  .app-main {
-    padding-left: 10px;
-    padding-right: 10px;
-  }
-
-  .login-card {
-    padding-left: 14px;
-    padding-right: 14px;
-  }
-
-  .bottom-link {
-    min-width: 42px;
-  }
-
-  .bottom-link span {
-    font-size: 0.58rem;
-  }
-}
 
 h1, h2, h3 { font-family: var(--font-heading); color: var(--text); margin: 0; font-weight: 700; }
 h1 { font-size: 1.6rem; letter-spacing: -0.02em; }
@@ -261,17 +154,46 @@ label {
 }
 
 /* ============ App shell / navigation ============ */
+/* Chiều cao cố định (không phải min-height) để #app-shell không bao giờ
+   cao hơn viewport - nếu không, cả trang (html/body) sẽ có thanh cuộn
+   riêng NGOÀI thanh cuộn của .app-main, gây cuộn kép/giật trên mobile.
+   Khai báo dvh sau svh để trình duyệt hỗ trợ dùng giá trị chính xác hơn,
+   trình duyệt cũ hơn tự fallback về svh. */
 .app-shell {
-  min-height: 100svh;
+  height: 100svh;
+  height: 100dvh;
   display: flex;
+  overflow: hidden;
 }
 
 .app-main {
   flex: 1;
   min-width: 0;
+  min-height: 0;
   overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
   padding: 20px 16px calc(96px + env(safe-area-inset-bottom));
 }
+.app-main::-webkit-scrollbar { display: none; }
+
+/* Trang có nội dung dài/không giới hạn (danh sách kỷ niệm, hướng dẫn dài...)
+   dùng cặp class này để phần đầu trang (tiêu đề, tab lọc) luôn đứng yên,
+   chỉ phần nội dung bên trong tự cuộn - giữ cảm giác "một màn hình" cho
+   khung trang thay vì cuộn cả trang lẫn thanh cuộn ở .app-main. */
+.pane-page { height: 100%; min-height: 0; display: flex; flex-direction: column; }
+.pane-scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  display: flex;
+  flex-direction: column;
+}
+.pane-scroll::-webkit-scrollbar { display: none; }
 
 .offline-banner {
   background: var(--danger-soft);
@@ -286,6 +208,9 @@ label {
 
 .desktop-sidebar { display: none; }
 
+/* justify-content:center + gap cố định (thay vì space-around) để khoảng
+   cách giữa các mục thật sự do "gap" quyết định và luôn thấy rõ, thay vì
+   bị auto-distribute nuốt mất khi item đã có min-width lớn. */
 .bottom-nav {
   position: fixed;
   left: 0;
@@ -293,9 +218,10 @@ label {
   bottom: 0;
   z-index: 40;
   display: flex;
-  justify-content: space-around;
+  justify-content: center;
   align-items: flex-end;
-  padding: 8px 10px calc(10px + env(safe-area-inset-bottom));
+  gap: 22px;
+  padding: 8px 14px calc(10px + env(safe-area-inset-bottom));
   background: var(--surface);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
@@ -483,12 +409,18 @@ a.soft-card:hover {
 .image-picker > div:last-child > strong { color: var(--text); font-family: var(--font-heading); }
 .image-picker > div:last-child > p { font-size: 0.82rem; }
 .image-picker-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px; }
+/* Selector 2 lớp (.image-picker-actions .ghost-btn) để luôn thắng rule
+   mobile .ghost-btn{width:100%} bất kể thứ tự khai báo trong file - nút
+   chọn/bỏ ảnh cố tình nằm cạnh nhau, không phải full-width. */
+.image-picker-actions .ghost-btn {
+  width: auto;
+  min-height: 40px;
+}
 .image-picker-button {
   display: inline-flex;
   flex-direction: row;
   align-items: center;
   justify-content: center;
-  width: auto;
   margin: 0;
   cursor: pointer;
 }
@@ -497,13 +429,23 @@ a.soft-card:hover {
   .image-picker { grid-template-columns: 1fr; }
 }
 /* ============ Login ============ */
+/* height (không phải min-height) + overflow-y:auto riêng, vì #app ở trên
+   giờ có overflow:hidden toàn cục (phục vụ single-screen) - nếu không thì
+   khi nội dung form cao hơn viewport (bàn phím ảo mobile mở lên, hiện
+   thông báo lỗi...) sẽ bị cắt mất, không cách nào cuộn tới được nữa. */
 .login-page {
-  min-height: 100svh;
+  height: 100svh;
+  height: 100dvh;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 24px;
 }
+.login-page::-webkit-scrollbar { display: none; }
 .login-card {
   width: 100%;
   max-width: 380px;
@@ -543,6 +485,36 @@ a.soft-card:hover {
 .check input { width: auto; }
 
 /* ============ Home ============ */
+/* Home là trang chính khi mở app trên mobile nên được ép gọn để vừa đúng
+   một màn hình (không cần cuộn): padding/gap/kích thước nhỏ hơn các trang
+   khác, và co thêm ở @media (max-height) cho máy màn hình thấp. */
+.home-page { gap: 10px; height: 100%; justify-content: center; justify-content: safe center; }
+.home-page .home-hero { padding: 0; gap: 3px; }
+.home-page .avatar-pair { margin-bottom: 2px; }
+.home-page .avatar-pair img { width: 46px; height: 46px; margin-left: -12px; }
+.home-page .home-tagline { font-size: 0.82rem; }
+.home-page .home-hero h1 { font-size: 1.15rem; }
+.home-page .soft-card { padding: 12px 14px; gap: 4px; }
+.home-page .love-counter strong { font-size: 1.7rem; }
+.home-page .love-counter svg { width: 22px; height: 22px; }
+.home-page .couple-status-avatar { width: 46px; height: 46px; }
+.home-page .distance-stage { height: 62px; }
+.home-page .chibi { width: 42px; height: 48px; }
+.home-page .favorite-memory img { width: 52px; height: 52px; }
+
+@media (max-height: 700px) {
+  .home-page { gap: 6px; }
+  .home-page .soft-card { padding: 8px 12px; }
+  .home-page .avatar-pair img { width: 36px; height: 36px; }
+  .home-page .distance-stage { height: 44px; }
+  .home-page .chibi { width: 36px; height: 40px; }
+  .home-page .love-counter strong { font-size: 1.4rem; }
+  .home-page .connect-value { font-size: 1.3rem; }
+  .home-page .connect-title { font-size: 0.88rem; }
+  .home-page .couple-status-avatar { width: 38px; height: 38px; }
+  .home-page .couple-status-text { -webkit-line-clamp: 1; line-clamp: 1; }
+}
+
 .home-hero { text-align: center; display: flex; flex-direction: column; gap: 6px; padding: 6px 0; }
 .avatar-pair { display: flex; justify-content: center; margin-bottom: 6px; }
 .avatar-pair img {
@@ -578,6 +550,15 @@ a.soft-card:hover {
 .couple-status-heart { color: #ef7d92; flex-shrink: 0; }
 .couple-status-online { display: inline-flex; align-items: center; gap: 4px; font-size: 0.66rem; color: var(--success); font-weight: 700; }
 .couple-status-online i { width: 6px; height: 6px; border-radius: 50%; background: var(--success); display: inline-block; font-style: normal; }
+
+.couple-status-avatar-wrap { position: relative; display: inline-flex; }
+.couple-status-music {
+  position: absolute; right: -2px; bottom: -2px; width: 22px; height: 22px;
+  display: inline-flex; align-items: center; justify-content: center; border-radius: 50%;
+  background: var(--surface-solid); border: 2px solid var(--surface-solid); color: var(--accent-strong); box-shadow: var(--shadow-soft);
+}
+.couple-status-music.playing { background: var(--accent-gradient); color: #fff; animation: music-pulse 1.4s ease-in-out infinite; }
+@keyframes music-pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.12); } }
 
 /* ============ Distance love card (chibi run animation) ============ */
 .distance-love-card { text-decoration: none; gap: 10px; }
@@ -666,15 +647,16 @@ a.soft-card:hover {
 
 
 /* ============ Memories page ============ */
+/* Header + tab lọc đứng yên, chỉ .memories-scroll bên trong cuộn - danh
+   sách kỷ niệm tăng dần theo thời gian nên không thể ép "một màn hình"
+   tuyệt đối, nhưng khung trang thì luôn gọn trong một màn hình. */
 .memories-page {
   --memory-accent: #45b7a0;
   --memory-accent-strong: #2f9683;
   --memory-accent-soft: rgba(69, 183, 160, 0.14);
-  display: flex;
-  flex-direction: column;
-  gap: 18px;
-  padding-bottom: 104px;
+  gap: 14px;
 }
+.memories-scroll { gap: 18px; padding-bottom: 104px; }
 .memories-header { display: flex; align-items: center; justify-content: space-between; gap: 14px; text-align: center; }
 .memories-header > div { flex: 1; }
 .memories-header span { display: block; color: var(--memory-accent); font-weight: 800; font-size: 0.74rem; text-transform: uppercase; letter-spacing: 0.08em; }
@@ -709,6 +691,13 @@ a.soft-card:hover {
 .memory-card p { display: -webkit-box; overflow: hidden; -webkit-line-clamp: 3; -webkit-box-orient: vertical; font-size: 0.85rem; }
 .memory-card small { display: inline-flex; align-items: center; gap: 4px; color: #2f9683; font-weight: 700; }
 .memory-card img { width: 92px; height: 92px; align-self: end; object-fit: cover; border-radius: var(--radius-sm); }
+.memory-card-actions { position: absolute; top: 10px; right: 10px; z-index: 2; display: flex; gap: 4px; }
+.memory-card-actions button {
+  width: 28px; height: 28px; display: inline-flex; align-items: center; justify-content: center;
+  border-radius: 50%; background: #fff; border: 1px solid #cdece3; color: var(--memory-accent-strong); box-shadow: var(--shadow-soft);
+}
+.memory-card-actions button:hover { background: var(--memory-accent-soft); }
+.memory-card-actions button.active { color: #ef7d92; border-color: #f7c3cf; }
 .memory-fab { position: fixed; right: max(20px, calc((100vw - 640px) / 2 + 20px)); bottom: calc(100px + env(safe-area-inset-bottom)); z-index: 45; display: flex; flex-direction: column; align-items: center; gap: 6px; color: var(--memory-accent); font-weight: 800; font-size: 0.82rem; }
 .memory-fab svg { width: 54px; height: 54px; padding: 13px; border-radius: 50%; background: linear-gradient(135deg, #8fe3cf, #45b7a0); color: #fff; box-shadow: 0 14px 28px -14px rgba(69, 183, 160, 0.62); }
 .memory-modal { position: fixed; inset: 0; z-index: 80; display: flex; align-items: flex-end; justify-content: center; padding: 20px; background: rgba(31, 23, 27, 0.38); backdrop-filter: blur(10px); }
@@ -745,9 +734,43 @@ a.soft-card:hover {
 }
 
 /* ============ Status story diary ============ */
-.diary-page { display: flex; flex-direction: column; gap: 16px; }
+/* Header đứng yên, composer (giờ có thêm khối chọn nhạc nên cao hơn) nằm
+   trong .diary-scroll để tự cuộn riêng nếu máy thấp - giống Memories/Settings. */
+.diary-page { display: flex; flex-direction: column; gap: 12px; }
+.diary-scroll { gap: 16px; padding-bottom: 16px; }
 .diary-hero { align-items: flex-start; }
 .diary-hero p { margin-top: 4px; max-width: 34rem; }
+.diary-page .status-composer { gap: 10px; padding: 14px; }
+.diary-page .mood-choice { min-height: 58px; }
+.diary-page .status-composer textarea { min-height: 72px; }
+@media (max-height: 700px) {
+  .diary-page .mood-choice { min-height: 50px; padding: 7px 6px; }
+  .diary-page .status-composer textarea { min-height: 56px; }
+}
+
+/* ============ Music picker (đính nhạc YouTube vào status) ============ */
+.music-picker { display: flex; flex-direction: column; gap: 8px; padding: 12px; border-radius: var(--radius-md); background: var(--accent-soft); }
+.music-picker-label { display: flex; align-items: center; gap: 6px; font-size: 0.82rem; font-weight: 700; color: var(--accent-strong); }
+.music-picker-note { font-size: 0.78rem; color: var(--text-faint); }
+.music-picked { display: flex; align-items: center; gap: 8px; padding: 6px; background: var(--surface-solid); border-radius: var(--radius-sm); }
+.music-picked img { width: 40px; height: 40px; border-radius: var(--radius-sm); object-fit: cover; flex-shrink: 0; }
+.music-picked span { flex: 1; min-width: 0; font-size: 0.84rem; font-weight: 600; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.music-picked button { flex-shrink: 0; width: auto; min-height: 0; padding: 6px 12px; font-size: 0.78rem; }
+.music-search { display: flex; flex-direction: column; gap: 8px; }
+.music-search-row { display: flex; gap: 8px; }
+/* width:auto ép tay cho input/button trong hàng này - nếu không thì rule
+   mobile .ghost-btn{width:100%} (cuối file) sẽ thắng, ép nút "Tìm" chiếm
+   flex-basis 100% và bóp ô input còn lại 1 mẩu tí xíu không gõ được. */
+.music-search-row input { flex: 1; min-width: 0; width: auto; background: var(--surface-solid); }
+.music-search-row button { flex-shrink: 0; width: auto; padding-inline: 16px; }
+.music-search-error { font-size: 0.78rem; color: var(--text-faint); }
+.music-results { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; max-height: 220px; overflow-y: auto; }
+.music-results li button { width: 100%; display: flex; align-items: center; gap: 8px; padding: 6px; border-radius: var(--radius-sm); text-align: left; background: var(--surface-solid); }
+.music-results li button:hover { background: var(--accent-soft); }
+.music-results img { width: 40px; height: 40px; border-radius: var(--radius-sm); object-fit: cover; flex-shrink: 0; }
+.music-results span { min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+.music-results strong { font-size: 0.82rem; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.music-results small { font-size: 0.72rem; color: var(--text-faint); }
 .status-stories { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; text-decoration: none; }
 .status-story {
   position: relative;
@@ -850,6 +873,31 @@ a.soft-card:hover {
 }
 
 /* ============ Profile ============ */
+/* Cũng ép gọn như Home để vừa một màn hình trên mobile, không cần cuộn. */
+.profile-page { gap: 10px; }
+.profile-page .love-timer { gap: 8px; padding: 12px 14px; }
+.profile-page .love-timer-heart svg { width: 32px; height: 32px; }
+.profile-page .love-timer-hearts { gap: 6px; }
+.profile-page .editor-card { padding: 12px 14px; gap: 8px; }
+.profile-page .profile-form { gap: 8px; }
+.profile-page .image-picker { padding: 10px; grid-template-columns: auto 1fr; }
+.profile-page .image-picker img, .profile-page .image-placeholder { width: 64px; height: 64px; }
+
+@media (max-height: 700px) {
+  .profile-page { gap: 7px; }
+  .profile-page .love-timer-heart svg { width: 24px; height: 24px; }
+  .profile-page .love-timer-clock { font-size: 1rem; }
+  .profile-page .love-timer { padding: 8px 12px; gap: 4px; }
+  .profile-page .love-timer-footer { padding-top: 6px; }
+  .profile-page .editor-card { padding: 8px 12px; gap: 5px; }
+  .profile-page .profile-form { gap: 5px; }
+  .profile-page .profile-form label { gap: 2px; font-size: 0.78rem; }
+  .profile-page .profile-form input { padding: 6px 12px; }
+  .profile-page .image-picker { padding: 7px; }
+  .profile-page .image-picker img, .profile-page .image-placeholder { width: 48px; height: 48px; }
+  .profile-page .profile-save-btn { min-height: 38px; margin-top: 2px; }
+}
+
 .love-timer { align-items: center; text-align: center; gap: 14px; }
 .love-timer-hearts { display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; }
 .love-timer-unit { display: flex; flex-direction: column; align-items: center; gap: 6px; }
@@ -865,6 +913,10 @@ a.soft-card:hover {
 .profile-save-btn { align-self: flex-start; min-width: 140px; padding-inline: 30px; }
 
 /* ============ Settings ============ */
+/* Header đứng yên, phần hướng dẫn/cài đặt bên dưới dài nên nằm trong
+   .settings-scroll để tự cuộn riêng thay vì cuộn cả trang. */
+.settings-page { gap: 14px; }
+.settings-scroll { gap: 14px; padding-bottom: 12px; }
 .segmented { display: flex; gap: 6px; background: var(--surface-solid); border: 1px solid var(--border); border-radius: var(--radius-pill); padding: 4px; }
 .segmented button { flex: 1; display: flex; align-items: center; justify-content: center; gap: 6px; padding: 8px 10px; border-radius: var(--radius-pill); font-size: 0.82rem; font-weight: 600; color: var(--text-soft); }
 .segmented button.selected { background: var(--accent-gradient); color: #fff; }
@@ -944,4 +996,117 @@ a.soft-card:hover {
 /* ============ Accessibility ============ */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: 0.001ms !important; animation-iteration-count: 1 !important; transition-duration: 0.001ms !important; }
+}
+
+/* ============ Small mobile screens ============ */
+/* Đặt ở cuối file để các quy tắc dưới đây thắng cascade so với những rule
+   cùng độ đặc hiệu (class đơn) khai báo ở trên - trước đây 2 block này
+   từng nằm ngay sau phần Base nên bị các rule .soft-card/.app-main/...
+   khai báo sau đó (cùng độ đặc hiệu, đứng sau trong file) ghi đè mất,
+   khiến toàn bộ tinh chỉnh mobile không có tác dụng trên thực tế. */
+@media (max-width: 430px) {
+  html, body, #app {
+    min-height: 100%;
+  }
+
+  .app-main {
+    padding-left: 12px;
+    padding-right: 12px;
+    padding-top: 14px;
+  }
+
+  .page-stack {
+    gap: 12px;
+  }
+
+  .soft-card {
+    padding: 14px 14px;
+    border-radius: 18px;
+  }
+
+  .soft-card strong {
+    font-size: 1rem;
+  }
+
+  .primary-btn,
+  .ghost-btn,
+  .danger-btn {
+    width: 100%;
+    min-height: 46px;
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+
+  .login-page {
+    padding: 18px 12px;
+  }
+
+  .login-card {
+    max-width: 100%;
+    padding: 24px 18px 20px;
+    border-radius: 20px;
+  }
+
+  .login-card h1 {
+    font-size: 1.2rem;
+  }
+
+  .login-card form {
+    gap: 12px;
+  }
+
+  .bottom-nav {
+    padding-left: 8px;
+    padding-right: 8px;
+  }
+
+  .bottom-link {
+    min-width: 48px;
+    padding: 6px 6px 5px;
+  }
+
+  .bottom-link span {
+    font-size: 0.62rem;
+  }
+
+  .bottom-link.add {
+    min-width: 52px;
+    min-height: 52px;
+    transform: translateY(-12px);
+  }
+
+  .home-hero h1 {
+    font-size: 1.2rem;
+  }
+
+  .page-header {
+    align-items: flex-start;
+    gap: 10px;
+  }
+
+  .page-header h1,
+  .memories-header h1 {
+    font-size: 1.3rem;
+  }
+
+}
+
+@media (max-width: 360px) {
+  .app-main {
+    padding-left: 10px;
+    padding-right: 10px;
+  }
+
+  .login-card {
+    padding-left: 14px;
+    padding-right: 14px;
+  }
+
+  .bottom-link {
+    min-width: 42px;
+  }
+
+  .bottom-link span {
+    font-size: 0.58rem;
+  }
 }

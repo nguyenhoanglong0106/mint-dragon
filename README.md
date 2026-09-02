@@ -87,6 +87,8 @@ Bạn cũng có thể tham khảo file [`supabase/seed.sql`](supabase/seed.sql) 
 
 Chạy thêm file [`supabase/migrations/0003_lock_couple_id.sql`](supabase/migrations/0003_lock_couple_id.sql) - vá một lỗ hổng RLS: nếu không có file này, 1 trong 2 tài khoản đã đăng nhập có thể tự đổi `couple_id` của chính mình (ví dụ qua console trình duyệt) để xem/ghi dữ liệu của couple khác nếu project Supabase từng chứa nhiều hơn 1 couple. File này thêm 1 trigger chặn việc đó từ phía client, không ảnh hưởng thao tác gán couple thủ công của admin qua SQL Editor.
 
+Chạy thêm file [`supabase/migrations/0004_diary_music.sql`](supabase/migrations/0004_diary_music.sql) - thêm 2 cột `music_video_id`, `music_title` vào bảng `diaries` để mỗi lời nhắn có thể đính kèm 1 bài hát YouTube (xem mục "Lấy YouTube Data API key" ở bước 9).
+
 ## 9. Cấu hình file `.env`
 
 Sao chép file mẫu và điền giá trị thật:
@@ -99,9 +101,20 @@ cp .env.example .env
 VITE_SUPABASE_URL=https://xxxxxxxx.supabase.co
 VITE_SUPABASE_ANON_KEY=eyJhbGciOi...
 VITE_GOOGLE_PHOTOS_ALBUM_URL=https://photos.app.goo.gl/K7bKtMDdSgHypoCk8
+VITE_YOUTUBE_API_KEY=
 ```
 
 File `.env` đã được đưa vào `.gitignore` - **không bao giờ commit** file này.
+
+### Lấy YouTube Data API key (tùy chọn - để tìm nhạc trong Lời nhắn)
+
+Trang **Lời nhắn** cho phép tìm và đính kèm 1 bài hát YouTube vào status hàng ngày (phát bằng cách bấm vào icon sóng nhạc cạnh avatar ở Trang chủ). Tính năng tìm kiếm này gọi YouTube Data API v3 - **miễn phí** (quota mặc định 10.000 unit/ngày, mỗi lượt tìm tốn 100 unit, tức ~100 lượt tìm/ngày, dư sức cho 2 người dùng). Nếu không cấu hình key, phần tìm nhạc sẽ tự ẩn/báo chưa cấu hình, không ảnh hưởng các tính năng khác.
+
+1. Vào https://console.cloud.google.com/, tạo project mới (hoặc dùng project có sẵn).
+2. Vào **APIs & Services > Library**, tìm "YouTube Data API v3", bấm **Enable**.
+3. Vào **APIs & Services > Credentials > Create Credentials > API key**.
+4. (Khuyến nghị) Bấm vào key vừa tạo, ở **Application restrictions** chọn **Websites**, thêm domain thật của app (ví dụ `https://your-app.pages.dev/*`) để tránh key bị lộ trong bundle frontend rồi bị người khác dùng ké. Ở **API restrictions**, chọn **Restrict key**, chỉ tick "YouTube Data API v3".
+5. Copy API key, điền vào `VITE_YOUTUBE_API_KEY` trong `.env` (và trong biến môi trường Cloudflare Pages nếu deploy - bước 12).
 
 ## 10. Chạy dev
 
@@ -134,6 +147,7 @@ npm run preview
    - `VITE_SUPABASE_URL`
    - `VITE_SUPABASE_ANON_KEY`
    - `VITE_GOOGLE_PHOTOS_ALBUM_URL`
+   - `VITE_YOUTUBE_API_KEY` (tùy chọn - bỏ trống nếu không cần tìm nhạc trong Lời nhắn)
 5. Deploy. File `public/_redirects` (chứa `/* /index.html 200`) đã có sẵn để SPA routing (Vue Router `createWebHistory`) hoạt động đúng khi truy cập trực tiếp vào các route con như `/memories`, `/map`, ...
 
 ## 13. Bật Supabase Realtime cho `live_locations`
@@ -165,6 +179,7 @@ Kiểm tra lại (tùy chọn): vào **Database > Replication** trong Supabase D
 | Trình duyệt từ chối GPS | Vào cài đặt trình duyệt/site, cấp lại quyền Location cho domain, tải lại trang. |
 | Build lỗi type | Chạy `npm run build` để xem lỗi TypeScript cụ thể và sửa trực tiếp trong `src/`. |
 | Deploy Cloudflare bị 404 khi vào thẳng `/memories`, `/map`,... | Kiểm tra file `public/_redirects` có được build ra `dist/_redirects` không (Vite tự động copy mọi thứ trong `public/`). |
+| Trang Lời nhắn báo "Chưa cấu hình tìm nhạc" | Chưa điền `VITE_YOUTUBE_API_KEY` (bước 9) - tính năng đính nhạc là tùy chọn, các tính năng khác vẫn hoạt động bình thường. |
 
 ## 16. Giới hạn của vị trí realtime trên PWA
 
@@ -193,6 +208,7 @@ supabase/
   migrations/0001_init.sql   schema + RLS + trigger + realtime
   migrations/0002_username_login.sql   username login (dragon/mint) + tạo couple
   migrations/0003_lock_couple_id.sql   vá RLS: chặn user tự đổi couple_id của mình
+  migrations/0004_diary_music.sql   thêm music_video_id/music_title vào diaries (đính nhạc YouTube)
   seed.sql                   dữ liệu mẫu (tùy chọn)
 tests/           unit test cho utils (Vitest)
 ```

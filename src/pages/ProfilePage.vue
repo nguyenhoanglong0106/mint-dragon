@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, reactive, ref } from 'vue'
-import { Camera, Heart, Settings, X } from '@lucide/vue'
+import { Camera, Heart, Settings } from '@lucide/vue'
 import { useCoupleStore } from '../stores/couple'
 import { useToast } from '../composables/useToast'
 import { elapsedBreakdown, formatDate } from '../utils/date'
@@ -43,10 +43,6 @@ async function selectAvatar(event: Event) {
   }
 }
 
-function removeAvatar() {
-  form.avatar_url = ''
-}
-
 async function save() {
   if (!couple.myProfile) return
   await couple.saveProfile({
@@ -61,7 +57,7 @@ async function save() {
 </script>
 
 <template>
-  <section class="page-stack">
+  <section class="page-stack profile-page">
     <header class="page-header"><div><span>Hai trái tim</span><h1>Chuyện của chúng mình</h1></div><RouterLink to="/settings" class="icon-link" aria-label="Cài đặt"><Settings :size="20" /></RouterLink></header>
     <section v-if="couple.couple && breakdown" class="soft-card love-timer">
       <span>Ngày mình bắt đầu</span>
@@ -86,7 +82,6 @@ async function save() {
           <p>Chọn một tấm ảnh thật xinh của bạn.</p>
           <div class="image-picker-actions">
             <label class="ghost-btn image-picker-button"><Camera :size="17" /> Chọn ảnh<input type="file" accept="image/*" @change="selectAvatar" /></label>
-            <button v-if="form.avatar_url" type="button" class="ghost-btn" @click="removeAvatar"><X :size="17" /> Bỏ ảnh</button>
           </div>
         </div>
       </div>
