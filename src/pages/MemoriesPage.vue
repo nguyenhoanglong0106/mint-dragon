@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { computed, onMounted, reactive, ref, watch } from 'vue'
-import { Calendar, Camera, Grid2X2, Heart, MapPin, Pencil, Plus, SlidersHorizontal, Trash2, X } from '@lucide/vue'
+import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
+import { Calendar, Camera, Grid2X2, Heart, LocateFixed, MapPin, Mic, Pencil, Plus, SlidersHorizontal, Square, Trash2, Video, X } from '@lucide/vue'
 import { useAuthStore } from '../stores/auth'
 import { useCoupleStore } from '../stores/couple'
 import { useMemoriesStore } from '../stores/memories'
@@ -19,6 +19,12 @@ const activeFilter = ref<'all' | 'year' | 'favorite'>('all')
 const selectedYear = ref('')
 const showForm = ref(false)
 const editingId = ref<string | null>(null)
+const locating = ref(false)
+const recording = ref(false)
+let mediaRecorder: MediaRecorder | null = null
+let recordingStream: MediaStream | null = null
+const MAX_AUDIO_BYTES = 4 * 1024 * 1024
+const MAX_VIDEO_BYTES = 12 * 1024 * 1024
 const form = reactive({
   title: '',
   content: '',
@@ -28,6 +34,8 @@ const form = reactive({
   location_name: '',
   latitude: '',
   longitude: '',
+  audio_note_url: '',
+  video_note_url: '',
   is_favorite: false
 })
 
@@ -42,7 +50,7 @@ const groupedMemories = computed(() => years.value
   .filter((group) => group.items.length))
 
 function resetForm() {
-  Object.assign(form, { title: '', content: '', memory_date: todayIso(), cover_image_url: '', google_photos_url: '', location_name: '', latitude: '', longitude: '', is_favorite: false })
+  Object.assign(form, { title: '', content: '', memory_date: todayIso(), cover_image_url: '', google_photos_url: '', location_name: '', latitude: '', longitude: '', audio_note_url: '', video_note_url: '', is_favorite: false })
 }
 
 function openForm(item?: Memory) {
@@ -57,6 +65,8 @@ function openForm(item?: Memory) {
       location_name: item.location_name || '',
       latitude: item.latitude != null ? String(item.latitude) : '',
       longitude: item.longitude != null ? String(item.longitude) : '',
+      audio_note_url: item.audio_note_url || '',
+      video_note_url: item.video_note_url || '',
       is_favorite: item.is_favorite
     })
   } else {
@@ -89,6 +99,116 @@ function removeCoverImage() {
   form.cover_image_url = ''
 }
 
+function fileToDataUrl(file: File, maxBytes: number) {
+  if (file.size > maxBytes) throw new Error(`File hơi lớn rồi, chọn file dưới ${Math.round(maxBytes / 1024 / 1024)}MB nhé.`)
+  return new Promise<string>((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = () => resolve(String(reader.result))
+    reader.onerror = () => reject(new Error('Không đọc được file này.'))
+    reader.readAsDataURL(file)
+  })
+}
+
+function blobToDataUrl(blob: Blob) {
+  return new Promise<string>((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = () => resolve(String(reader.result))
+    reader.onerror = () => reject(new Error('Không lưu được bản ghi âm này.'))
+    reader.readAsDataURL(blob)
+  })
+}
+
+async function selectAudioNote(event: Event) {
+  const input = event.target as HTMLInputElement
+  const file = input.files?.[0]
+  if (!file) return
+  try {
+    form.audio_note_url = await fileToDataUrl(file, MAX_AUDIO_BYTES)
+  } catch (error) {
+    toast.push(error instanceof Error ? error.message : 'Không đọc được voice note này.', 'error')
+  } finally {
+    input.value = ''
+  }
+}
+
+async function selectVideoNote(event: Event) {
+  const input = event.target as HTMLInputElement
+  const file = input.files?.[0]
+  if (!file) return
+  try {
+    form.video_note_url = await fileToDataUrl(file, MAX_VIDEO_BYTES)
+  } catch (error) {
+    toast.push(error instanceof Error ? error.message : 'Không đọc được video note này.', 'error')
+  } finally {
+    input.value = ''
+  }
+}
+
+async function startVoiceRecording() {
+  if (!navigator.mediaDevices?.getUserMedia || typeof MediaRecorder === 'undefined') {
+    toast.push('Trình duyệt này chưa hỗ trợ ghi âm trực tiếp.', 'error')
+    return
+  }
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+    const chunks: Blob[] = []
+    recordingStream = stream
+    mediaRecorder = new MediaRecorder(stream)
+    mediaRecorder.ondataavailable = (event) => {
+      if (event.data.size) chunks.push(event.data)
+    }
+    mediaRecorder.onstop = async () => {
+      try {
+        const blob = new Blob(chunks, { type: mediaRecorder?.mimeType || 'audio/webm' })
+        if (blob.size > MAX_AUDIO_BYTES) throw new Error('Voice note hơi dài rồi, ghi ngắn hơn chút nhé.')
+        form.audio_note_url = await blobToDataUrl(blob)
+        toast.push('Đã lưu voice note cho kỷ niệm', 'success')
+      } catch (error) {
+        toast.push(error instanceof Error ? error.message : 'Không lưu được voice note.', 'error')
+      } finally {
+        recording.value = false
+        recordingStream?.getTracks().forEach((track) => track.stop())
+        recordingStream = null
+        mediaRecorder = null
+      }
+    }
+    mediaRecorder.start()
+    recording.value = true
+  } catch {
+    toast.push('Không mở được micro. Kiểm tra quyền ghi âm của trình duyệt nhé.', 'error')
+  }
+}
+
+function stopVoiceRecording() {
+  if (mediaRecorder && recording.value) mediaRecorder.stop()
+}
+
+function clearMediaNote(kind: 'audio' | 'video') {
+  if (kind === 'audio') form.audio_note_url = ''
+  else form.video_note_url = ''
+}
+
+function useCurrentLocation() {
+  if (!navigator.geolocation || locating.value) {
+    if (!navigator.geolocation) toast.push('Trình duyệt này chưa hỗ trợ lấy vị trí.', 'error')
+    return
+  }
+  locating.value = true
+  navigator.geolocation.getCurrentPosition(
+    (position) => {
+      form.latitude = position.coords.latitude.toFixed(6)
+      form.longitude = position.coords.longitude.toFixed(6)
+      locating.value = false
+      toast.push('Đã gắn tọa độ hiện tại vào kỷ niệm', 'success')
+    },
+    () => {
+      locating.value = false
+      toast.push('Không lấy được vị trí hiện tại.', 'error')
+    },
+    { enableHighAccuracy: true, timeout: 10000, maximumAge: 30000 }
+  )
+}
+
 async function reload() {
   if (couple.couple?.id) await memories.load(couple.couple.id)
   if (!selectedYear.value) selectedYear.value = years.value[0] || ''
@@ -110,6 +230,8 @@ async function saveMemory() {
     location_name: form.location_name || null,
     latitude: form.latitude ? Number(form.latitude) : null,
     longitude: form.longitude ? Number(form.longitude) : null,
+    audio_note_url: form.audio_note_url || null,
+    video_note_url: form.video_note_url || null,
     is_favorite: form.is_favorite
   }
   if (editingId.value) {
@@ -151,6 +273,11 @@ onMounted(async () => {
 
 watch(() => route.query.add, (value) => {
   if (value === '1') openForm()
+})
+
+onBeforeUnmount(() => {
+  if (mediaRecorder && recording.value) mediaRecorder.stop()
+  recordingStream?.getTracks().forEach((track) => track.stop())
 })
 </script>
 
@@ -209,6 +336,13 @@ watch(() => route.query.add, (value) => {
         <label>Ngày của chúng mình<input v-model="form.memory_date" type="date" required /></label>
         <label>Lời nhắn gửi ngày ấy<textarea v-model="form.content" rows="3" required placeholder="Viết vài dòng để sau này đọc lại vẫn mỉm cười" /></label>
         <label>Nơi mình đã ở bên nhau<input v-model="form.location_name" placeholder="Hà Nội" /></label>
+        <div class="memory-location-fields">
+          <button class="ghost-btn" type="button" :disabled="locating" @click="useCurrentLocation"><LocateFixed :size="17" /> {{ locating ? 'Đang lấy vị trí...' : 'Dùng vị trí hiện tại' }}</button>
+          <div>
+            <label>Vĩ độ<input v-model="form.latitude" inputmode="decimal" placeholder="21.027763" /></label>
+            <label>Kinh độ<input v-model="form.longitude" inputmode="decimal" placeholder="105.834160" /></label>
+          </div>
+        </div>
         <div class="image-picker memory-cover-picker">
           <img v-if="form.cover_image_url" :src="form.cover_image_url" alt="Ảnh bìa kỷ niệm" />
           <div v-else class="image-placeholder"><Camera :size="24" /><span>Ảnh bìa</span></div>
@@ -219,6 +353,23 @@ watch(() => route.query.add, (value) => {
               <label class="ghost-btn image-picker-button"><Camera :size="17" /> Chọn ảnh<input type="file" accept="image/*" @change="selectCoverImage" /></label>
               <button v-if="form.cover_image_url" type="button" class="ghost-btn" @click="removeCoverImage"><X :size="17" /> Bỏ ảnh</button>
             </div>
+          </div>
+        </div>
+        <div class="memory-media-note">
+          <strong>Voice / video note</strong>
+          <div v-if="form.audio_note_url" class="media-preview">
+            <audio :src="form.audio_note_url" controls />
+            <button class="ghost-btn" type="button" @click="clearMediaNote('audio')"><X :size="17" /> Bỏ voice</button>
+          </div>
+          <div v-if="form.video_note_url" class="media-preview">
+            <video :src="form.video_note_url" controls playsinline />
+            <button class="ghost-btn" type="button" @click="clearMediaNote('video')"><X :size="17" /> Bỏ video</button>
+          </div>
+          <div class="image-picker-actions">
+            <button v-if="!recording" class="ghost-btn" type="button" @click="startVoiceRecording"><Mic :size="17" /> Ghi âm</button>
+            <button v-else class="ghost-btn recording" type="button" @click="stopVoiceRecording"><Square :size="17" /> Dừng ghi</button>
+            <label class="ghost-btn image-picker-button"><Mic :size="17" /> Chọn voice<input type="file" accept="audio/*" @change="selectAudioNote" /></label>
+            <label class="ghost-btn image-picker-button"><Video :size="17" /> Chọn video<input type="file" accept="video/*" @change="selectVideoNote" /></label>
           </div>
         </div>
         <label>Link album Google Photos<input v-model="form.google_photos_url" type="url" placeholder="https://photos.app.goo.gl/..." /></label>

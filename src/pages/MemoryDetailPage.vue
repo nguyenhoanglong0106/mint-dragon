@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
-import { ChevronLeft, ExternalLink, Heart, MapPin } from '@lucide/vue'
+import { ChevronLeft, ExternalLink, Heart, MapPin, Mic, Video } from '@lucide/vue'
 import { useRoute } from 'vue-router'
 import type { Memory } from '../types'
 import { memoryService } from '../services/memory.service'
@@ -30,6 +30,18 @@ onMounted(async () => { memory.value = await memoryService.get(String(route.para
         </div>
 
         <small v-if="memory.latitude && memory.longitude" class="detail-coords">Tọa độ: {{ memory.latitude }}, {{ memory.longitude }}</small>
+
+        <section v-if="memory.audio_note_url || memory.video_note_url" class="detail-media-note">
+          <h2>Một mẩu âm thanh / video</h2>
+          <div v-if="memory.audio_note_url" class="detail-media-player">
+            <span><Mic :size="15" /> Voice note</span>
+            <audio :src="memory.audio_note_url" controls />
+          </div>
+          <div v-if="memory.video_note_url" class="detail-media-player">
+            <span><Video :size="15" /> Video note</span>
+            <video :src="memory.video_note_url" controls playsinline />
+          </div>
+        </section>
 
         <a v-if="memory.google_photos_url" :href="memory.google_photos_url" target="_blank" rel="noreferrer" class="ghost-btn detail-photos-link"><ExternalLink :size="16" /> Mở Google Photos</a>
       </div>

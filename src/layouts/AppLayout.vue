@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { BookOpen, Camera, HeartPulse, Home, Map, PanelLeftClose, PanelLeftOpen, Settings, UserRound } from '@lucide/vue'
+import { BookOpen, Camera, Gift, HeartPulse, Home, Map, PanelLeftClose, PanelLeftOpen, Settings, UserRound } from '@lucide/vue'
 import { onMounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { useCoupleStore } from '../stores/couple'
@@ -20,6 +20,7 @@ const nav = [
   { to: '/', label: 'Chúng mình', icon: Home },
   { to: '/diary', label: 'Lời nhắn', icon: BookOpen },
   { to: '/memories', label: 'Kỉ niệm', icon: HeartPulse },
+  { to: '/vault', label: 'Kho yêu', icon: Gift },
   { to: '/map', label: 'Vị trí', icon: Map },
   { to: '/profile', label: 'Cá nhân', icon: UserRound }
 ]

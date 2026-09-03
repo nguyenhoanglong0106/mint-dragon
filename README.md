@@ -89,6 +89,8 @@ Chạy thêm file [`supabase/migrations/0003_lock_couple_id.sql`](supabase/migra
 
 Chạy thêm file [`supabase/migrations/0004_diary_music.sql`](supabase/migrations/0004_diary_music.sql) - thêm 2 cột `music_video_id`, `music_title` vào bảng `diaries` để mỗi lời nhắn có thể đính kèm 1 bài hát YouTube (xem mục "Lấy YouTube Data API key" ở bước 9).
 
+Chạy thêm file [`supabase/migrations/0005_love_vault_and_memory_media.sql`](supabase/migrations/0005_love_vault_and_memory_media.sql) - thêm voice/video note cho kỷ niệm, hũ điều ước (`wish_items`) và coupon yêu thương (`love_coupons`).
+
 ## 9. Cấu hình file `.env`
 
 Sao chép file mẫu và điền giá trị thật:
