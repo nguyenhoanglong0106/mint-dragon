@@ -1,8 +1,8 @@
 import { supabase } from './supabase'
 import type { LoveCoupon, WishItem } from '../types'
 
-export type WishInput = Omit<WishItem, 'id' | 'picked_count' | 'last_picked_at' | 'completed_at' | 'created_at' | 'updated_at'>
-export type CouponInput = Omit<LoveCoupon, 'id' | 'redeemed_by' | 'redeemed_at' | 'created_at' | 'updated_at'>
+export type WishInput = Omit<WishItem, 'id' | 'updated_by' | 'picked_count' | 'last_picked_at' | 'completed_at' | 'created_at' | 'updated_at'>
+export type CouponInput = Omit<LoveCoupon, 'id' | 'updated_by' | 'redeemed_by' | 'redeemed_at' | 'created_at' | 'updated_at'>
 
 export const loveVaultService = {
   async listWishes(coupleId: string) {
@@ -15,7 +15,7 @@ export const loveVaultService = {
     if (error) throw error
     return data
   },
-  async updateWish(id: string, input: Partial<WishInput> & Partial<Pick<WishItem, 'picked_count' | 'last_picked_at' | 'completed_at'>>) {
+  async updateWish(id: string, input: Partial<WishInput> & Partial<Pick<WishItem, 'updated_by' | 'picked_count' | 'last_picked_at' | 'completed_at'>>) {
     const { data, error } = await supabase.from('wish_items').update(input).eq('id', id).select().single<WishItem>()
     if (error) throw error
     return data
@@ -34,7 +34,7 @@ export const loveVaultService = {
     if (error) throw error
     return data
   },
-  async updateCoupon(id: string, input: Partial<CouponInput> & Partial<Pick<LoveCoupon, 'redeemed_by' | 'redeemed_at'>>) {
+  async updateCoupon(id: string, input: Partial<CouponInput> & Partial<Pick<LoveCoupon, 'updated_by' | 'redeemed_by' | 'redeemed_at'>>) {
     const { data, error } = await supabase.from('love_coupons').update(input).eq('id', id).select().single<LoveCoupon>()
     if (error) throw error
     return data

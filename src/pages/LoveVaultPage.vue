@@ -5,6 +5,7 @@ import { useAuthStore } from '../stores/auth'
 import { useCoupleStore } from '../stores/couple'
 import { useLoveVaultStore } from '../stores/love-vault'
 import { useToast } from '../composables/useToast'
+import { formatDate } from '../utils/date'
 import type { CouponType, LoveCoupon, WishCategory, WishItem } from '../types'
 
 const auth = useAuthStore()
@@ -42,6 +43,9 @@ const usedCoupons = computed(() => vault.coupons.filter((item) => item.status ==
 
 const categoryMeta = (value: WishCategory) => wishCategories.find((item) => item.value === value) ?? wishCategories[5]
 const couponTypeLabel = (value: CouponType) => couponTypes.find((item) => item.value === value)?.label ?? 'Tự viết'
+const wishCreatedLabel = (item: WishItem) => `Ước ngày ${formatDate(item.created_at)}`
+const wishDoneLabel = (item: WishItem) => item.completed_at ? `Hoàn thành ${formatDate(item.completed_at)}` : ''
+const actorName = () => couple.myProfile?.nickname || couple.myProfile?.display_name || 'Người ấy'
 
 async function reload() {
   if (couple.couple?.id) await vault.load(couple.couple.id)
@@ -51,7 +55,8 @@ async function createWish() {
   if (!couple.couple?.id || !auth.user || submitting.value) return
   submitting.value = true
   try {
-    await vault.createWish({
+    await toast.requestPermission()
+    const item = await vault.createWish({
       couple_id: couple.couple.id,
       created_by: auth.user.id,
       title: wishForm.title.trim(),
@@ -60,7 +65,10 @@ async function createWish() {
       status: 'open'
     })
     Object.assign(wishForm, { title: '', category: 'food', note: '' })
-    toast.push('Đã thả một điều ước vào hũ', 'success')
+    toast.push('Đã thả một điều ước vào hũ', 'success', {
+      title: `Điều ước mới từ ${actorName()}`,
+      body: `Ngày ${formatDate(item.created_at)}, ${actorName()} ước rằng: "${item.title}". ${item.note || 'Một điều nhỏ cho hai đứa.'}`
+    })
   } catch (error) {
     toast.push(error instanceof Error ? error.message : 'Không lưu được điều ước', 'error')
   } finally {
@@ -69,28 +77,43 @@ async function createWish() {
 }
 
 async function pickWish() {
+  if (!auth.user) return
   if (!openWishes.value.length) {
     toast.push('Hũ điều ước đang trống.', 'info')
     return
   }
   const item = openWishes.value[Math.floor(Math.random() * openWishes.value.length)]
   try {
+    await toast.requestPermission()
     pickedWish.value = await vault.updateWish(item.id, {
       picked_count: item.picked_count + 1,
-      last_picked_at: new Date().toISOString()
+      last_picked_at: new Date().toISOString(),
+      updated_by: auth.user.id
     })
-    toast.push('Đã bốc một điều cho hôm nay', 'success')
+    toast.push('Đã bốc một điều cho hôm nay', 'success', {
+      title: `${actorName()} vừa bốc hũ điều ước`,
+      body: `Ngày ${formatDate(pickedWish.value.last_picked_at || pickedWish.value.updated_at)}, ${actorName()} bốc trúng: "${pickedWish.value.title}". ${pickedWish.value.note || 'Một điều nhỏ cho hai đứa.'}`
+    })
   } catch (error) {
     toast.push(error instanceof Error ? error.message : 'Không bốc được điều ước', 'error')
   }
 }
 
 async function toggleWish(item: WishItem) {
+  if (!auth.user) return
   const nextDone = item.status !== 'done'
   try {
-    await vault.updateWish(item.id, {
+    await toast.requestPermission()
+    const updated = await vault.updateWish(item.id, {
       status: nextDone ? 'done' : 'open',
-      completed_at: nextDone ? new Date().toISOString() : null
+      completed_at: nextDone ? new Date().toISOString() : null,
+      updated_by: auth.user.id
+    })
+    const title = nextDone ? `${actorName()} vừa hoàn thành một điều ước` : `${actorName()} vừa mở lại một điều ước`
+    const date = formatDate(nextDone ? (updated.completed_at || updated.updated_at) : updated.updated_at)
+    toast.push(nextDone ? 'Đã đánh dấu hoàn thành điều ước' : 'Đã mở lại điều ước', 'success', {
+      title,
+      body: nextDone ? `Ngày ${date}, ${actorName()} đã hoàn thành: "${updated.title}".` : `Ngày ${date}, ${actorName()} muốn giữ lại điều ước: "${updated.title}".`
     })
   } catch (error) {
     toast.push(error instanceof Error ? error.message : 'Không cập nhật được điều ước', 'error')
@@ -107,7 +130,8 @@ async function createCoupon() {
   if (!couple.couple?.id || !auth.user || submitting.value) return
   submitting.value = true
   try {
-    await vault.createCoupon({
+    await toast.requestPermission()
+    const item = await vault.createCoupon({
       couple_id: couple.couple.id,
       created_by: auth.user.id,
       title: couponForm.title.trim(),
@@ -116,9 +140,12 @@ async function createCoupon() {
       status: 'available'
     })
     Object.assign(couponForm, { title: '', coupon_type: 'choice', description: '' })
-    toast.push('Đã tạo coupon yêu thương', 'success')
+    toast.push('Đã tạo vé yêu thương', 'success', {
+      title: `Vé yêu thương mới từ ${actorName()}`,
+      body: `Ngày ${formatDate(item.created_at)}, ${actorName()} muốn: "${item.title}" (${couponTypeLabel(item.coupon_type)}). ${item.description || 'Dùng khi cần được chiều một chút.'}`
+    })
   } catch (error) {
-    toast.push(error instanceof Error ? error.message : 'Không tạo được coupon', 'error')
+    toast.push(error instanceof Error ? error.message : 'Không tạo được vé yêu thương', 'error')
   } finally {
     submitting.value = false
   }
@@ -127,31 +154,43 @@ async function createCoupon() {
 async function redeemCoupon(item: LoveCoupon) {
   if (!auth.user) return
   try {
-    await vault.updateCoupon(item.id, {
+    await toast.requestPermission()
+    const updated = await vault.updateCoupon(item.id, {
       status: 'redeemed',
       redeemed_by: auth.user.id,
-      redeemed_at: new Date().toISOString()
+      redeemed_at: new Date().toISOString(),
+      updated_by: auth.user.id
     })
-    toast.push('Coupon đã được dùng rồi nha', 'success')
+    toast.push('Vé yêu thương đã được dùng rồi nha', 'success', {
+      title: `${actorName()} vừa dùng vé yêu thương`,
+      body: `Ngày ${formatDate(updated.redeemed_at || updated.updated_at)}, ${actorName()} đã dùng: "${updated.title}". ${updated.description || 'Một lời hứa nhỏ vừa thành thật.'}`
+    })
   } catch (error) {
-    toast.push(error instanceof Error ? error.message : 'Không dùng được coupon', 'error')
+    toast.push(error instanceof Error ? error.message : 'Không dùng được vé yêu thương', 'error')
   }
 }
 
 async function restoreCoupon(item: LoveCoupon) {
+  if (!auth.user) return
   try {
-    await vault.updateCoupon(item.id, {
+    await toast.requestPermission()
+    const updated = await vault.updateCoupon(item.id, {
       status: 'available',
       redeemed_by: null,
-      redeemed_at: null
+      redeemed_at: null,
+      updated_by: auth.user.id
+    })
+    toast.push('Đã mở lại vé yêu thương', 'success', {
+      title: `${actorName()} vừa mở lại vé yêu thương`,
+      body: `Ngày ${formatDate(updated.updated_at)}, "${updated.title}" đã sẵn sàng dùng lại.`
     })
   } catch (error) {
-    toast.push(error instanceof Error ? error.message : 'Không mở lại được coupon', 'error')
+    toast.push(error instanceof Error ? error.message : 'Không mở lại được vé yêu thương', 'error')
   }
 }
 
 async function removeCoupon(item: LoveCoupon) {
-  if (!confirm('Xóa coupon này?')) return
+  if (!confirm('Xóa vé yêu thương này?')) return
   await vault.removeCoupon(item.id)
 }
 
@@ -164,12 +203,12 @@ onMounted(async () => {
 <template>
   <section class="vault-page pane-page">
     <header class="page-header vault-header">
-      <div><span>Kho yêu thương</span><h1>Hũ điều ước & coupon</h1><p>Những món muốn ăn, nơi muốn đi, điều muốn làm và mấy tấm vé nhỏ để thương nhau vui hơn.</p></div>
+      <div><span>Kho yêu thương</span><h1>Hũ điều ước & vé yêu thương</h1><p>Những món muốn ăn, nơi muốn đi, điều muốn làm và mấy tấm vé nhỏ để thương nhau vui hơn.</p></div>
     </header>
 
     <div class="vault-tabs" aria-label="Kho yêu thương">
       <button :class="{ selected: activeTab === 'wishes' }" type="button" @click="activeTab = 'wishes'"><Sparkles :size="18" /> Hũ điều ước</button>
-      <button :class="{ selected: activeTab === 'coupons' }" type="button" @click="activeTab = 'coupons'"><Ticket :size="18" /> Coupon</button>
+      <button :class="{ selected: activeTab === 'coupons' }" type="button" @click="activeTab = 'coupons'"><Ticket :size="18" /> Vé yêu thương</button>
     </div>
 
     <div class="pane-scroll vault-scroll">
@@ -196,13 +235,14 @@ onMounted(async () => {
           <span>Kết quả bốc thăm</span>
           <strong>{{ pickedWish.title }}</strong>
           <p>{{ pickedWish.note || 'Một điều nhỏ cũng đủ làm hôm nay vui hơn.' }}</p>
+          <small>{{ wishCreatedLabel(pickedWish) }}<template v-if="pickedWish.last_picked_at"> · Bốc gần nhất {{ formatDate(pickedWish.last_picked_at) }}</template></small>
           <button class="ghost-btn" type="button" @click="pickedWish = null"><X :size="17" /> Cất lại</button>
         </section>
 
         <section class="vault-list">
           <article v-for="item in openWishes" :key="item.id" class="vault-card">
             <div class="vault-card-icon"><component :is="categoryMeta(item.category).icon" :size="20" /></div>
-            <div><span>{{ categoryMeta(item.category).label }}</span><strong>{{ item.title }}</strong><p v-if="item.note">{{ item.note }}</p><small v-if="item.picked_count">Đã bốc {{ item.picked_count }} lần</small></div>
+            <div><span>{{ categoryMeta(item.category).label }}</span><strong>{{ item.title }}</strong><p v-if="item.note">{{ item.note }}</p><div class="vault-dates"><small>{{ wishCreatedLabel(item) }}</small><small v-if="item.picked_count">Đã bốc {{ item.picked_count }} lần</small></div></div>
             <div class="vault-actions"><button type="button" aria-label="Đánh dấu đã làm" @click="toggleWish(item)"><Check :size="17" /></button><button type="button" aria-label="Xóa" @click="removeWish(item)"><Trash2 :size="17" /></button></div>
           </article>
           <p v-if="!openWishes.length" class="soft-card empty">Hũ đang trống, thêm một điều muốn làm cùng nhau nha.</p>
@@ -212,7 +252,7 @@ onMounted(async () => {
           <h2>Đã cùng nhau làm</h2>
           <article v-for="item in doneWishes" :key="item.id" class="vault-card">
             <div class="vault-card-icon done"><Check :size="20" /></div>
-            <div><span>{{ categoryMeta(item.category).label }}</span><strong>{{ item.title }}</strong><p v-if="item.note">{{ item.note }}</p></div>
+            <div><span>{{ categoryMeta(item.category).label }}</span><strong>{{ item.title }}</strong><p v-if="item.note">{{ item.note }}</p><div class="vault-dates"><small>{{ wishCreatedLabel(item) }}</small><small v-if="wishDoneLabel(item)">{{ wishDoneLabel(item) }}</small></div></div>
             <div class="vault-actions"><button type="button" aria-label="Mở lại" @click="toggleWish(item)"><RotateCcw :size="17" /></button><button type="button" aria-label="Xóa" @click="removeWish(item)"><Trash2 :size="17" /></button></div>
           </article>
         </section>
@@ -220,12 +260,12 @@ onMounted(async () => {
 
       <template v-else>
         <form class="vault-form coupon-form" @submit.prevent="createCoupon">
-          <label>Tên coupon<input v-model="couponForm.title" required maxlength="120" placeholder="Một lần được chọn món" /></label>
+          <label>Tên vé yêu thương<input v-model="couponForm.title" required maxlength="120" placeholder="Một lần được chọn món" /></label>
           <div class="coupon-type-row">
             <button v-for="type in couponTypes" :key="type.value" :class="{ selected: couponForm.coupon_type === type.value }" type="button" @click="couponForm.coupon_type = type.value">{{ type.label }}</button>
           </div>
           <label>Lời hứa nhỏ<textarea v-model="couponForm.description" rows="2" placeholder="Điều kiện dùng, thời hạn, lời nhắn..." /></label>
-          <button class="primary-btn" :disabled="submitting" type="submit"><Ticket :size="18" /> Tạo coupon</button>
+          <button class="primary-btn" :disabled="submitting" type="submit"><Ticket :size="18" /> Tạo vé</button>
         </form>
 
         <section class="coupon-grid">
@@ -233,13 +273,13 @@ onMounted(async () => {
             <span>{{ couponTypeLabel(item.coupon_type) }}</span>
             <strong>{{ item.title }}</strong>
             <p>{{ item.description || 'Dùng khi cần được chiều một chút.' }}</p>
-            <div class="vault-actions"><button type="button" @click="redeemCoupon(item)"><Check :size="17" /> Dùng coupon</button><button type="button" aria-label="Xóa" @click="removeCoupon(item)"><Trash2 :size="17" /></button></div>
+            <div class="vault-actions"><button type="button" @click="redeemCoupon(item)"><Check :size="17" /> Dùng vé</button><button type="button" aria-label="Xóa" @click="removeCoupon(item)"><Trash2 :size="17" /></button></div>
           </article>
-          <p v-if="!availableCoupons.length" class="soft-card empty">Chưa có coupon nào sẵn sàng.</p>
+          <p v-if="!availableCoupons.length" class="soft-card empty">Chưa có vé yêu thương nào sẵn sàng.</p>
         </section>
 
         <section v-if="usedCoupons.length" class="coupon-grid used">
-          <h2>Coupon đã dùng</h2>
+          <h2>Vé đã dùng</h2>
           <article v-for="item in usedCoupons" :key="item.id" class="coupon-card used">
             <span>{{ couponTypeLabel(item.coupon_type) }}</span>
             <strong>{{ item.title }}</strong>

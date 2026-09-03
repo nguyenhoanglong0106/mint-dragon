@@ -91,6 +91,10 @@ Chạy thêm file [`supabase/migrations/0004_diary_music.sql`](supabase/migratio
 
 Chạy thêm file [`supabase/migrations/0005_love_vault_and_memory_media.sql`](supabase/migrations/0005_love_vault_and_memory_media.sql) - thêm voice/video note cho kỷ niệm, hũ điều ước (`wish_items`) và coupon yêu thương (`love_coupons`).
 
+Chạy thêm file [`supabase/migrations/0006_realtime_notifications.sql`](supabase/migrations/0006_realtime_notifications.sql) - bật realtime cho lời nhắn, hũ điều ước và vé yêu thương để app có thể hiện system notification cụ thể hơn.
+
+Chạy thêm file [`supabase/migrations/0007_wish_coupon_actor.sql`](supabase/migrations/0007_wish_coupon_actor.sql) - thêm cột `updated_by` cho `wish_items`/`love_coupons` và bật `REPLICA IDENTITY FULL` cho 2 bảng này, bắt buộc để app biết chính xác ai vừa bốc điều ước/dùng vé và gửi đúng thông báo cho người còn lại (thiếu file này thì thông báo cập nhật sẽ không hoạt động).
+
 ## 9. Cấu hình file `.env`
 
 Sao chép file mẫu và điền giá trị thật:

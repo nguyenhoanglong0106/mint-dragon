@@ -83,7 +83,12 @@ async function submit() {
       music_title: form.music_title || null
     }
     await store.create(input)
-    toast.push('Đã đăng status cho người ấy thấy', 'success')
+    const senderName = couple.myProfile?.nickname || couple.myProfile?.display_name || 'Người ấy'
+    const musicLine = form.music_title ? `\nKèm bài hát: ${form.music_title}` : ''
+    toast.push('Đã đăng status cho người ấy thấy', 'success', {
+      title: `Lời nhắn mới từ ${senderName}`,
+      body: `${senderName} vừa cảm thấy ${mood.label}: "${form.content}"${musicLine}`
+    })
     reset()
     await reload()
   } catch (error) {

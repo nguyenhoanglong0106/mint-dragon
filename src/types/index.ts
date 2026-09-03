@@ -10,7 +10,7 @@ export interface ToastMessage { id: number; type: 'success' | 'error' | 'info'; 
 export interface PartnerLocation extends LiveLocation { profile?: Profile }
 export type WishCategory = 'food' | 'place' | 'movie' | 'activity' | 'gift' | 'other'
 export type WishStatus = 'open' | 'done'
-export interface WishItem { id: string; couple_id: string; created_by: string; title: string; category: WishCategory; note: string | null; status: WishStatus; picked_count: number; last_picked_at: string | null; completed_at: string | null; created_at: string; updated_at: string }
+export interface WishItem { id: string; couple_id: string; created_by: string; updated_by: string | null; title: string; category: WishCategory; note: string | null; status: WishStatus; picked_count: number; last_picked_at: string | null; completed_at: string | null; created_at: string; updated_at: string }
 export type CouponType = 'choice' | 'hug' | 'date' | 'pause' | 'custom'
 export type CouponStatus = 'available' | 'redeemed' | 'archived'
-export interface LoveCoupon { id: string; couple_id: string; created_by: string; title: string; description: string | null; coupon_type: CouponType; status: CouponStatus; redeemed_by: string | null; redeemed_at: string | null; created_at: string; updated_at: string }
+export interface LoveCoupon { id: string; couple_id: string; created_by: string; updated_by: string | null; title: string; description: string | null; coupon_type: CouponType; status: CouponStatus; redeemed_by: string | null; redeemed_at: string | null; created_at: string; updated_at: string }

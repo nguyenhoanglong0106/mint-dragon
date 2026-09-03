@@ -243,10 +243,13 @@ label {
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: flex-start;
   gap: 3px;
   padding: 6px 10px;
   min-width: 48px;
-  min-height: 44px;
+  /* Chiều cao cố định (không phải min-height) để icon luôn nằm cùng một hàng dù
+     nhãn xuống 1 hay 2 dòng — tránh các mục bị lệch cao thấp so với nhau. */
+  height: 58px;
   border-radius: var(--radius-sm);
   color: var(--text-faint);
   font-size: 0.68rem;
@@ -254,6 +257,7 @@ label {
   transition: color 0.2s ease, background 0.2s ease;
 }
 .bottom-link.active { color: var(--accent-strong); background: var(--accent-soft); }
+.bottom-link span { line-height: 1.15; text-align: center; }
 
 .bottom-link.add {
   background: var(--accent-gradient);
@@ -980,7 +984,8 @@ a.soft-card:hover {
 .vault-card-icon.done { background: var(--success-soft); color: var(--success); }
 .vault-card strong, .coupon-card strong { display: block; color: var(--text); font-family: var(--font-heading); font-size: 1rem; }
 .vault-card p, .coupon-card p { margin-top: 3px; font-size: 0.84rem; }
-.vault-card small { display: block; margin-top: 5px; color: var(--text-faint); font-size: 0.74rem; font-weight: 700; }
+.vault-card small, .vault-random small { display: block; color: var(--text-faint); font-size: 0.74rem; font-weight: 700; }
+.vault-dates { display: flex; flex-wrap: wrap; gap: 4px 10px; margin-top: 6px; }
 .vault-actions { display: flex; gap: 6px; align-items: center; }
 .vault-actions button { min-height: 34px; display: inline-flex; align-items: center; justify-content: center; gap: 5px; padding: 7px 10px; border-radius: var(--radius-pill); background: var(--surface-solid); border: 1px solid var(--border); color: var(--text-soft); font-size: 0.78rem; font-weight: 800; }
 .vault-actions button:hover { color: var(--accent-strong); background: var(--accent-soft); }
