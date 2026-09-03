@@ -54,7 +54,12 @@
 /* ============ Base ============ */
 * { box-sizing: border-box; }
 
-html, body, #app { height: 100%; overflow: hidden; touch-action: pan-x pan-y; }
+/* touch-action: pan-x pan-y ở đây (thay vì để auto) từng khiến iOS coi
+   html/body là vùng có thể pan native -> kéo quá đầu/cuối trang bị bounce
+   giãn ra lộ theme-color phía sau, dù overflow đã hidden. Bỏ hẳn thuộc tính
+   này (chặn pinch-zoom đã có viewport meta lo) + overscroll-behavior none
+   để không còn elastic bounce ở khung ngoài cùng. */
+html, body, #app { height: 100%; overflow: hidden; overscroll-behavior: none; }
 
 body {
   margin: 0;
@@ -172,6 +177,7 @@ label {
   min-height: 0;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
+  overscroll-behavior-y: contain;
   scrollbar-width: none;
   -ms-overflow-style: none;
   padding: 20px 16px calc(96px + env(safe-area-inset-bottom));
@@ -188,6 +194,7 @@ label {
   min-height: 0;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
+  overscroll-behavior-y: contain;
   scrollbar-width: none;
   -ms-overflow-style: none;
   display: flex;
@@ -438,6 +445,7 @@ a.soft-card:hover {
   height: 100dvh;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
+  overscroll-behavior-y: contain;
   scrollbar-width: none;
   -ms-overflow-style: none;
   display: flex;
