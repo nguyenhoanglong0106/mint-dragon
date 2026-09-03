@@ -29,10 +29,10 @@ async function submit() {
       <div class="login-mark"><Heart :size="30" /></div>
       <h1>Góc nhỏ của chúng mình</h1>
       <p>Một nơi dịu dàng để cất kỷ niệm, lời nhắn và những lần mình tìm thấy nhau.</p>
-      <form @submit.prevent="submit">
-        <label>Username<input v-model.trim="username" type="text" autocomplete="username" placeholder="dragon hoặc mint" required /></label>
-        <label>Mật khẩu<input v-model="password" type="password" autocomplete="current-password" minlength="6" required /></label>
-        <label class="check"><input type="checkbox" checked /> Ghi nhớ phiên đăng nhập</label>
+      <form @submit.prevent="submit" method="post">
+        <label>Username<input v-model.trim="username" type="text" name="username" id="login-username" autocomplete="username" placeholder="dragon hoặc mint" required /></label>
+        <label>Mật khẩu<input v-model="password" type="password" name="password" id="login-password" autocomplete="current-password" minlength="6" required /></label>
+        <label class="check"><input type="checkbox" checked disabled /> Ghi nhớ phiên đăng nhập (luôn bật)</label>
         <button class="primary-btn" type="submit" :disabled="!canSubmit || loading">{{ loading ? 'Đang đăng nhập...' : 'Đăng nhập' }}</button>
         <p v-if="auth.error" class="form-error">{{ auth.error }}</p>
       </form>
