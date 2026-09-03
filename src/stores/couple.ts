@@ -12,38 +12,48 @@ export const useCoupleStore = defineStore('couple', () => {
   const error = ref('')
   const partnerProfile = computed(() => profiles.value.find((profile) => profile.id !== myProfile.value?.id) ?? null)
 
+  let inFlight: Promise<void> | null = null
+
   async function load() {
-    loading.value = true
-    error.value = ''
+    if (inFlight) return inFlight
+    inFlight = (async () => {
+      loading.value = true
+      error.value = ''
+      try {
+        const auth = useAuthStore()
+        if (!auth.user?.id) throw new Error('Không có user đăng nhập')
+
+        let profile = await coupleService.getMyProfile(auth.user.id)
+        if (!profile) {
+          profile = await coupleService.createProfile({
+            id: auth.user.id,
+            display_name: auth.user.email?.split('@')[0] || 'Bạn'
+          })
+        }
+        myProfile.value = profile
+
+        if (profile.couple_id) {
+          const [coupleRow, coupleProfiles] = await Promise.all([
+            coupleService.getCouple(profile.couple_id),
+            coupleService.getProfiles(profile.couple_id)
+          ])
+          couple.value = coupleRow
+          profiles.value = coupleProfiles
+        } else {
+          couple.value = null
+          profiles.value = [profile]
+          error.value = 'Tài khoản chưa được gán couple_id. Xem README mục 7-8 để gán trong Supabase.'
+        }
+      } catch (loadError) {
+        error.value = loadError instanceof Error ? loadError.message : 'Không tải được hồ sơ'
+      } finally {
+        loading.value = false
+      }
+    })()
     try {
-      const auth = useAuthStore()
-      if (!auth.user?.id) throw new Error('Không có user đăng nhập')
-
-      let profile = await coupleService.getMyProfile(auth.user.id)
-      if (!profile) {
-        profile = await coupleService.createProfile({
-          id: auth.user.id,
-          display_name: auth.user.email?.split('@')[0] || 'Bạn'
-        })
-      }
-      myProfile.value = profile
-
-      if (profile.couple_id) {
-        const [coupleRow, coupleProfiles] = await Promise.all([
-          coupleService.getCouple(profile.couple_id),
-          coupleService.getProfiles(profile.couple_id)
-        ])
-        couple.value = coupleRow
-        profiles.value = coupleProfiles
-      } else {
-        couple.value = null
-        profiles.value = [profile]
-        error.value = 'Tài khoản chưa được gán couple_id. Xem README mục 7-8 để gán trong Supabase.'
-      }
-    } catch (loadError) {
-      error.value = loadError instanceof Error ? loadError.message : 'Không tải được hồ sơ'
+      await inFlight
     } finally {
-      loading.value = false
+      inFlight = null
     }
   }
 
