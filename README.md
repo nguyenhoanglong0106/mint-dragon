@@ -63,14 +63,12 @@ Có thể chạy lại file này an toàn (idempotent) nếu cần - các lệnh
 
 ## 7. Tạo 2 tài khoản đăng nhập bằng username ngắn (dragon / mint)
 
-App đăng nhập bằng **username ngắn + mật khẩu** (`dragon` / `hoanglong0106` và `mint` / `hongdiem1708`) thay vì email dài, nhưng bên dưới vẫn là Supabase Auth thật - mỗi username được ánh xạ tới 1 email cố định dạng `<username>@mint-dragon.local`, mật khẩu được Supabase hash và lưu trong `auth.users` như bình thường.
+App đăng nhập bằng **username ngắn + mật khẩu** (`dragon` và `mint`) thay vì email dài, nhưng bên dưới vẫn là Supabase Auth thật - mỗi username được ánh xạ tới 1 email cố định dạng `<username>@mint-dragon.local`, mật khẩu được hash bcrypt và lưu trong `auth.users` như bình thường.
 
-1. Vào **Authentication > Users > Add user** trong Supabase Dashboard.
-2. Tạo tài khoản thứ nhất với email `dragon@mint-dragon.local`, mật khẩu `hoanglong0106`.
-3. Tạo tài khoản thứ hai với email `mint@mint-dragon.local`, mật khẩu `hongdiem1708`.
-4. Tick "Auto Confirm User" khi tạo (app dùng email giả nên không thể xác thực qua link email).
+1. Mở **SQL Editor**, copy toàn bộ nội dung file [`supabase/accounts.sql`](supabase/accounts.sql), thay `<mat-khau-dragon>` / `<mat-khau-mint>` bằng mật khẩu thật rồi chạy. Chỉ sửa trong SQL Editor, **không commit** mật khẩu thật vào git.
+2. File này tạo 2 user `dragon@mint-dragon.local` / `mint@mint-dragon.local` đã xác nhận email sẵn (app dùng email giả nên không thể xác thực qua link email). Nếu user đã tồn tại thì chỉ đặt lại mật khẩu.
 
-Không cần trang đăng ký công khai - chỉ admin (bạn) tạo 2 tài khoản này một lần duy nhất qua Dashboard.
+Cũng có thể tạo tay qua **Authentication > Users > Add user** (nhớ tick "Auto Confirm User"). Muốn đổi mật khẩu thì chạy lại `accounts.sql` với mật khẩu mới.
 
 ## 8. Chạy migration gán username + tạo couple
 
@@ -81,7 +79,7 @@ Không cần trang đăng ký công khai - chỉ admin (bạn) tạo 2 tài kho�
    - Tìm id của 2 user vừa tạo ở bước 7 theo email, gán `username` (`dragon` / `mint`) và `couple_id` cho profile của họ - không cần copy UUID thủ công.
 3. Sửa `started_date` trong file thành ngày bắt đầu yêu thật của hai bạn trước khi chạy (mặc định `2024-01-01`).
 
-Có thể chạy lại file này an toàn (idempotent). Sau bước này, đăng nhập ở bước 10 bằng `dragon`/`hoanglong0106` hoặc `mint`/`hongdiem1708` sẽ hoạt động, và toàn bộ dữ liệu (kỷ niệm, lời thương mỗi ngày...) được lưu thật trong Supabase, đồng bộ giữa 2 người thay vì chỉ lưu trên trình duyệt.
+Có thể chạy lại file này an toàn (idempotent). Nếu đã chạy file này trước khi tạo user ở bước 7 thì chạy lại một lần nữa. Sau bước này, đăng nhập ở bước 10 bằng `dragon` hoặc `mint` với mật khẩu đã đặt ở bước 7 sẽ hoạt động, và toàn bộ dữ liệu (kỷ niệm, lời thương mỗi ngày...) được lưu thật trong Supabase, đồng bộ giữa 2 người thay vì chỉ lưu trên trình duyệt.
 
 Bạn cũng có thể tham khảo file [`supabase/seed.sql`](supabase/seed.sql) để có thêm vài kỷ niệm mẫu (nhớ sửa 2 UUID trong file theo id thật của 2 user trước khi chạy).
 
@@ -128,7 +126,7 @@ Trang **Lời nhắn** cho phép tìm và đính kèm 1 bài hát YouTube vào s
 npm run dev
 ```
 
-Mở trình duyệt tại `http://localhost:5173` (hoặc port Vite in ra). Đăng nhập bằng `dragon`/`hoanglong0106` hoặc `mint`/`hongdiem1708` (đã tạo ở bước 7-8).
+Mở trình duyệt tại `http://localhost:5173` (hoặc port Vite in ra). Đăng nhập bằng `dragon` hoặc `mint` với mật khẩu đã đặt ở bước 7 (đã tạo ở bước 7-8).
 
 ## 11. Build production
 
@@ -178,7 +176,7 @@ Kiểm tra lại (tùy chọn): vào **Database > Replication** trong Supabase D
 
 | Vấn đề | Cách xử lý |
 | --- | --- |
-| Đăng nhập báo "Sai username hoặc mật khẩu" | Kiểm tra đã tạo đúng email `dragon@mint-dragon.local` / `mint@mint-dragon.local` với đúng mật khẩu trong Authentication > Users (bước 7). |
+| Đăng nhập báo "Sai username hoặc mật khẩu" | Kiểm tra trong Authentication > Users đã có `dragon@mint-dragon.local` / `mint@mint-dragon.local` chưa, nếu chưa hoặc quên mật khẩu thì chạy lại `supabase/accounts.sql` (bước 7). |
 | Trang trắng, không có dữ liệu | Kiểm tra đã chạy migration (bước 6, 8) và profile của cả 2 user đã có `couple_id` chưa (chạy lại `0002_username_login.sql`). |
 | Vào app thấy cảnh báo "Hãy điền Supabase URL..." | Chưa cấu hình đúng `.env`, kiểm tra lại bước 9 và restart `npm run dev`. |
 | Không thấy vị trí người còn lại | Kiểm tra cả 2 tài khoản đã bật "Chia sẻ vị trí", kiểm tra Realtime đã bật (bước 13), kiểm tra cả 2 profile cùng `couple_id`. |
@@ -215,6 +213,7 @@ supabase/
   migrations/0002_username_login.sql   username login (dragon/mint) + tạo couple
   migrations/0003_lock_couple_id.sql   vá RLS: chặn user tự đổi couple_id của mình
   migrations/0004_diary_music.sql   thêm music_video_id/music_title vào diaries (đính nhạc YouTube)
+  accounts.sql               tạo 2 tài khoản dragon, mint (hoặc đặt lại mật khẩu)
   seed.sql                   dữ liệu mẫu (tùy chọn)
 tests/           unit test cho utils (Vitest)
 ```
@@ -222,7 +221,7 @@ tests/           unit test cho utils (Vitest)
 ## Giới hạn / phần còn lại bạn cần tự làm
 
 - Tạo Supabase project thật và điền `.env` (bước 5, 9).
-- Tạo 2 tài khoản (email giả `dragon@mint-dragon.local` / `mint@mint-dragon.local`) và chạy migration gán couple (bước 7, 8) - đây là bước thủ công bắt buộc vì app không có đăng ký công khai và Supabase Auth cần được tạo qua Dashboard (cần service role key, không dùng được từ frontend).
+- Tạo 2 tài khoản (email giả `dragon@mint-dragon.local` / `mint@mint-dragon.local`) và chạy migration gán couple (bước 7, 8) - đây là bước thủ công bắt buộc vì app không có đăng ký công khai, user phải được tạo bằng quyền admin trong SQL Editor (không làm được từ frontend).
 - Tạo/thay avatar thật (nhập URL ảnh trong trang Hồ sơ) và cập nhật album Google Photos thật.
 - Deploy lên Cloudflare Pages và gán biến môi trường (bước 12).
 - (Tùy chọn, không thuộc scope v1) Nếu muốn vị trí chạy cả khi tắt màn hình/đóng app, cần đóng gói bằng Capacitor + plugin Background Geolocation native - kiến trúc hiện tại đã sẵn sàng để mở rộng nhưng chưa triển khai trong bản này.
