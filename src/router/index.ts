@@ -9,7 +9,7 @@ import MapPage from '../pages/MapPage.vue'
 import LoveVaultPage from '../pages/LoveVaultPage.vue'
 import ProfilePage from '../pages/ProfilePage.vue'
 import SettingsPage from '../pages/SettingsPage.vue'
-import { useAuthStore } from '../stores/auth'
+import { authGuard } from './guard'
 
 const router = createRouter({
   history: createWebHistory(),
@@ -31,11 +31,6 @@ const router = createRouter({
   scrollBehavior: () => ({ top: 0 })
 })
 
-router.beforeEach((to) => {
-  const auth = useAuthStore()
-  if (to.meta.auth && !auth.isAuthenticated) return { name: 'login', query: { redirect: to.fullPath } }
-  if (to.name === 'login' && auth.isAuthenticated) return { name: 'home' }
-  return true
-})
+router.beforeEach(authGuard)
 
 export default router

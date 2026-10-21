@@ -9,15 +9,22 @@ export const useAuthStore = defineStore('auth', () => {
   const error = ref('')
   const isAuthenticated = computed(() => Boolean(user.value))
 
-  async function init() {
-    loading.value = true
-    try {
-      const { data } = await authService.getSession()
-      user.value = data.session?.user ?? null
-      authService.onAuthStateChange((_event, session) => { user.value = session?.user ?? null })
-    } finally {
-      loading.value = false
-    }
+  let initPromise: Promise<void> | null = null
+
+  // Khôi phục phiên đã lưu đúng 1 lần; router guard chờ hàm này xong mới kiểm
+  // tra đăng nhập, nên gọi lại nhiều lần chỉ trả về cùng 1 promise.
+  function init() {
+    initPromise ??= (async () => {
+      loading.value = true
+      try {
+        const { data } = await authService.getSession()
+        user.value = data.session?.user ?? null
+        authService.onAuthStateChange((_event, session) => { user.value = session?.user ?? null })
+      } finally {
+        loading.value = false
+      }
+    })()
+    return initPromise
   }
 
   async function login(username: string, password: string) {
