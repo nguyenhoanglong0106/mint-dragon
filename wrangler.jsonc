@@ -1,0 +1,14 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "mint-dragon",
+  "compatibility_date": "2026-10-19",
+  "observability": {
+    "enabled": true
+  },
+  // Chỉ phục vụ file tĩnh trong dist (Vite build ra), không có Worker script.
+  // SPA: đường dẫn không khớp file nào (/memories, /map...) trả về index.html.
+  "assets": {
+    "directory": "./dist",
+    "not_found_handling": "single-page-application"
+  }
+}

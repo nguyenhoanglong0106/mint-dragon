@@ -20,6 +20,7 @@ dist-ssr
 # Test/build artifacts
 coverage
 *.tsbuildinfo
+.wrangler
 
 # Editor directories and files
 .vscode/*
